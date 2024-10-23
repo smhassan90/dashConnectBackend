@@ -4,7 +4,9 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken')
-const dotenv = require('dotenv/config');
+require('dotenv/config');
+const tokenVerification = require('../config/tokenVerification');
+const Story =  require('../models/story');
 
 // Register route:
 router.post('/register', async (req, res) => {
@@ -73,5 +75,34 @@ router.post('/login', async (req, res) => {
 });
 
  
+
+// Story route:
+router.post('/stories', tokenVerification, async (req, res) => {
+    try {
+        const { name, description, integrations, complementaryDatasets } = req.body;
+        const emailFromToken = req.emailFromToken; // Token se email nikaalna
+
+        // Create a new story instance
+        const newStory = new Story({
+            name,
+            description,
+            integrations,
+            complementaryDatasets,
+            createdBy: emailFromToken // User ka email store karna
+        });
+
+        // Save the new story to the database
+        await newStory.save(); // Timestamps automatically save honge
+
+        // Send success response
+        res.status(201).send({ message: "Story created successfully", story: newStory });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Error creating story", error: err });
+    }
+});
+
+
+
 
 module.exports = router; 
