@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const storySchema = new mongoose.Schema({
-    name: {
+    storyName: {
         type: String,
         required: true
     },
@@ -17,10 +17,10 @@ const storySchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    createdBy: { 
+    storyCreatedBy: { 
         type: String,
         required: true
     }
-}, { timestamps: true });
+}, { timestamps: true }); 
 
-module.exports = mongoose.model('story', storySchema);
+module.exports = mongoose.model('Story', storySchema);

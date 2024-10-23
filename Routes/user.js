@@ -79,16 +79,16 @@ router.post('/login', async (req, res) => {
 // Story route:
 router.post('/stories', tokenVerification, async (req, res) => {
     try {
-        const { name, description, integrations, complementaryDatasets } = req.body;
+        const { storyName, description, integrations, complementaryDatasets } = req.body;
         const emailFromToken = req.emailFromToken; // Token se email nikaalna
 
         // Create a new story instance
         const newStory = new Story({
-            name,
+            storyName,
             description,
             integrations,
             complementaryDatasets,
-            createdBy: emailFromToken // User ka email store karna
+            storyCreatedBy: emailFromToken // User ka email store karna
         });
 
         // Save the new story to the database
