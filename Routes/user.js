@@ -9,16 +9,29 @@ const dotenv = require('dotenv/config');
 // Register route:
 router.post('/register', async (req, res) => {
     try {
+        // Destructure data from req.body
+        const { firstName, lastName, email, companyName, password } = req.body;
+
         // Hash the password
-        const password = bcrypt.hashSync(req.body.password, 10);
-        // Create a new user
-        const user = await User.create({ ...req.body, password });
+        const hashedPassword = bcrypt.hashSync(password, 10);
+
+        // Create a new user object with hashed password
+        const user = await User.create({
+            firstName,
+            lastName,
+            email,
+            companyName,
+            password: hashedPassword, // Store hashed password
+        });
+
         const data = user.toObject();
         delete data.password; // Remove password from the response
-        res.status(201).send({ status: 201, data ,  message : "User Created Sucessfully" }); // Send user data
+
+        // Send response
+        res.status(201).send({ status: 201, data, message: "User Created Successfully" });
     } catch (err) {
         console.log("postApiError", err);
-        res.status(500).send({ status: 500, user: err  });
+        res.status(500).send({ status: 500, error: err });
     }
 });
 
