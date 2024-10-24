@@ -3,24 +3,27 @@ const mongoose = require('mongoose');
 const storySchema = new mongoose.Schema({
     storyName: {
         type: String,
-        required: true
+        required: true,
     },
     description: {
         type: String,
-        required: true
+        required: true,
     },
     integrations: {
         type: String,
-        required: true
+        required: true,
     },
     complementaryDatasets: {
         type: String,
-        required: true
+        required: true,
     },
-    storyCreatedBy: { 
+    storyCreatedBy: {
         type: String,
-        required: true
-    }
-}, { timestamps: true }); 
+        required: true,
+    },
+}, {
+    timestamps: true,
+});
 
-module.exports = mongoose.model('Story', storySchema);
+const Story = mongoose.model('Story', storySchema);
+module.exports = Story;
