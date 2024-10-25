@@ -111,7 +111,7 @@ router.post("/stories", tokenVerification, async (req, res) => {
 
 
 // Get all stories route
-router.get("/stories", tokenVerification, async (req, res) => {
+router.get("/stories", async (req, res) => {
   try {
     const stories = await Story.find().populate(
       "storyCreatedBy",
