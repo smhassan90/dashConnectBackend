@@ -76,7 +76,7 @@ router.post("/login", async (req, res) => {
 // Story creation route
 router.post("/stories", tokenVerification, async (req, res) => {
   try {
-    const { storyName, description, integrations, complementaryDatasets } = req.body;
+    const { storyBoardName, description, integrations, complementaryDatasets } = req.body;
     const userIdFromToken = req.userIdFromToken; // Use user ID from token
 
     // Fetch the user to include in the story
@@ -87,7 +87,7 @@ router.post("/stories", tokenVerification, async (req, res) => {
     }
 
         const newStory = new Story({
-            storyName,
+            storyBoardName,
             description,
             integrations,
             complementaryDatasets,
@@ -122,7 +122,7 @@ router.get("/stories", async (req, res) => {
 router.put("/stories/:id", tokenVerification, async (req, res) => {
   try {
     const storyId = req.params.id; // Get the story ID from the request parameters
-    const { storyName, description, integrations, complementaryDatasets } =
+    const { storyBoardName, description, integrations, complementaryDatasets } =
       req.body;
 
     // Validate the story ID
@@ -132,7 +132,7 @@ router.put("/stories/:id", tokenVerification, async (req, res) => {
 
     const updatedStory = await Story.findByIdAndUpdate(
       storyId,
-      { storyName, description, integrations, complementaryDatasets },
+      { storyBoardName, description, integrations, complementaryDatasets },
       { new: true, runValidators: true } // Return the updated document and run validators
     );
 
