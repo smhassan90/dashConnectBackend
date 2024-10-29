@@ -86,19 +86,13 @@ router.post("/stories", tokenVerification, async (req, res) => {
       return res.status(404).send({ message: "User not found" });
     }
 
-    const newStory = new Story({
-      storyBoardName,
-      description,
-      integrations,
-      complementaryDatasets,
-      storyCreatedBy: userIdFromToken, // Store user ID
-      userDetails: { // Store user details as an object
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        companyName: user.companyName,
-      }
-    });
+        const newStory = new Story({
+            storyName,
+            description,
+            integrations,
+            complementaryDatasets,
+            storyCreatedBy: emailFromToken
+        });
 
     await newStory.save();
     res.status(201).send({ message: "Story created successfully", story: newStory });
