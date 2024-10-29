@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const storySchema = new mongoose.Schema({
-    storyName: {
+    storyBoardName: {
         type: String,
         required: true,
     },
