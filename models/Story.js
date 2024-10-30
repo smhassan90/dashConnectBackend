@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const storySchema = new mongoose.Schema({
-    storyBoardName: {
+    storyName: {
         type: String,
         required: true,
     },
@@ -36,5 +36,5 @@ const storySchema = new mongoose.Schema({
 );
 
 
-const Story = mongoose.model("Story", storySchema);
-module.exports = Story;
+module.exports = mongoose.model("Story", storySchema);
+

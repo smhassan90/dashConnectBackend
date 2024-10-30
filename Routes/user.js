@@ -8,32 +8,70 @@ require("dotenv/config");
 const tokenVerification = require("../config/tokenVerification");
 const Story = require("../models/story");
 const mongoose = require("mongoose");
+const Company = require("../models/Company"); 
 
 // Register route
-router.post("/register", async (req, res) => {
+// router.post("/register", async (req, res) => {
+//   try {
+//     const { firstName, lastName, email, companyName, password } = req.body;
+//     const hashedPassword = bcrypt.hashSync(password, 10);
+
+//     const user = await User.create({
+//       firstName,
+//       lastName,
+//       email,
+//       companyName,
+//       password: hashedPassword,
+//     });
+
+//     const data = user.toObject();
+//     delete data.password;
+
+//     res
+//       .status(201)
+//       .send({ status: 201, data, message: "User Created Successfully" });
+//   } catch (err) {
+//     console.error("postApiError", err);
+//     res.status(500).send({ status: 500, error: err });
+//   }
+// });
+
+router.post("/create", async (req, res) => {
   try {
-    const { firstName, lastName, email, companyName, password } = req.body;
-    const hashedPassword = bcrypt.hashSync(password, 10);
+      // Company ki details ko request body se lein
+      const { companyName, updateDate, Status, firstName, lastName, email, password } = req.body;
 
-    const user = await User.create({
-      firstName,
-      lastName,
-      email,
-      companyName,
-      password: hashedPassword,
-    });
+      // Company create karen
+      const company = await Company.create({
+          companyName,
+          updateDate,
+          Status,
+      });
 
-    const data = user.toObject();
-    delete data.password;
+      // User create karen with company details including ID
+      const user = await User.create({
+          firstName,
+          lastName,
+          email,
+          password,
+          company: {  // Company ki details ko user mein store karen
+              _id: company._id, // Company ki ID ko user mein store karna
+              companyName: company.companyName,
+              updateDate: company.updateDate,
+              Status: company.Status,
+          },
+      });
 
-    res
-      .status(201)
-      .send({ status: 201, data, message: "User Created Successfully" });
-  } catch (err) {
-    console.error("postApiError", err);
-    res.status(500).send({ status: 500, error: err });
+      // User ki details ke sath company ki details bhejna
+      const userWithCompany = await User.findById(user._id);
+
+      res.status(201).json({ user: userWithCompany });
+  } catch (error) {
+      res.status(500).json({ message: error.message });
   }
 });
+
+
 
 // Login route
 router.post("/login", async (req, res) => {
@@ -76,7 +114,7 @@ router.post("/login", async (req, res) => {
 // Story creation route
 router.post("/stories", tokenVerification, async (req, res) => {
   try {
-    const { storyBoardName, description, integrations, complementaryDatasets } = req.body;
+    const { storyName, description, integrations, complementaryDatasets } = req.body;
     const userIdFromToken = req.userIdFromToken; // Use user ID from token
 
     // Fetch the user to include in the story
@@ -86,13 +124,19 @@ router.post("/stories", tokenVerification, async (req, res) => {
       return res.status(404).send({ message: "User not found" });
     }
 
-        const newStory = new Story({
-            storyBoardName,
-            description,
-            integrations,
-            complementaryDatasets,
-            storyCreatedBy: emailFromToken
-        });
+    const newStory = new Story({
+      storyName,
+      description,
+      integrations,
+      complementaryDatasets,
+      storyCreatedBy: userIdFromToken, // Use user's ID here
+      userDetails: { // Store user details in the story
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        companyName: user.companyName,
+      },
+    });
 
     await newStory.save();
     res.status(201).send({ message: "Story created successfully", story: newStory });
@@ -122,7 +166,7 @@ router.get("/stories", async (req, res) => {
 router.put("/stories/:id", tokenVerification, async (req, res) => {
   try {
     const storyId = req.params.id; // Get the story ID from the request parameters
-    const { storyBoardName, description, integrations, complementaryDatasets } =
+    const { storyName, description, integrations, complementaryDatasets } =
       req.body;
 
     // Validate the story ID
@@ -132,7 +176,7 @@ router.put("/stories/:id", tokenVerification, async (req, res) => {
 
     const updatedStory = await Story.findByIdAndUpdate(
       storyId,
-      { storyBoardName, description, integrations, complementaryDatasets },
+      { storyName, description, integrations, complementaryDatasets },
       { new: true, runValidators: true } // Return the updated document and run validators
     );
 
