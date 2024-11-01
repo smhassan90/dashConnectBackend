@@ -1,4 +1,4 @@
-// Routes/auth.js
+// Routes/user.js
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
@@ -10,7 +10,7 @@ const Story = require("../models/story");
 const mongoose = require("mongoose");
 const Company = require("../models/Company"); 
 
-// create --> user route
+// create --> user API
 router.post("/create", async (req, res) => {
   try {
       const { companyName, updateDate, Status, firstName, lastName, email, password } = req.body;
@@ -47,21 +47,21 @@ router.post("/create", async (req, res) => {
 
 
 
-// create --> Add employee route
+// create --> Add employee API
 router.post("/addEmployee", tokenVerification, async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
     
-    // Token se user ID nikalna
+    // Extract ID from token
     const userIdFromToken = req.userIdFromToken;
 
-    // User ko fetch karna
+    // Fetch user
     const user = await User.findById(userIdFromToken);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Company ka data nikalna
+    // Extract company data
     const company = user.company;
 
     // Input validation
@@ -75,16 +75,16 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
       return res.status(409).json({ message: "Email already in use." });
     }
 
-    // Password hashing
+   
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    // Create user with company details
+    
     const newUser = await User.create({
       firstName,
       lastName,
       email,
       password: hashedPassword,
-      role: role || "employee", // Default role to 'employee'
+      role: role || "employee", 
       company: {
         _id: company._id, 
         companyName: company.companyName,
@@ -103,7 +103,7 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
 
 
 
-// create --> Login route
+// create --> Login API
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -145,7 +145,7 @@ router.post("/login", async (req, res) => {
 
 
 
-// create --> Update employee
+// create --> Update Employee
 router.put("/updateEmployee", tokenVerification, async (req, res) => {
   try {
       const { employeeId, firstName, lastName, email, password, role } = req.body; // Get employeeId from the request body
@@ -197,7 +197,7 @@ router.put("/updateEmployee", tokenVerification, async (req, res) => {
 
 
 
-// create --> Delete employee
+// create --> Delete Employee
 router.delete("/deleteEmployee", tokenVerification, async (req, res) => {
   try {
       const { employeeId } = req.body; // Get employeeId from the request body
@@ -234,5 +234,27 @@ router.delete("/deleteEmployee", tokenVerification, async (req, res) => {
   }
 });
  
+//  create --> Nuke Users API. It will delete all users from users collection
+router.delete("/nukeUsers", async (req, res) => {
+  try {
+    await User.deleteMany({}); // This command delete all users
+
+    res.status(200).json({ message: "All users have been deleted." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+// create --> Nuke Companies API. It will delete all companies from companies collection
+router.delete("/nukeCompanies", async (req, res) => {
+  try {
+    await Company.deleteMany({}); // This command delete all companies
+
+    res.status(200).json({ message: "All companies have been deleted." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 module.exports = router;
