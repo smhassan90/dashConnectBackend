@@ -207,6 +207,104 @@ router.post("/login", async (req, res) => {
 
 
 
+
+// Update employee
+router.put("/updateEmployee/:id", tokenVerification, async (req, res) => {
+  try {
+      const employeeId = req.params.id; // Get the employee ID from the request parameters
+      const { firstName, lastName, email, password, role } = req.body; // Destructure the request body
+
+      // Validate the employee ID
+      if (!mongoose.isValidObjectId(employeeId)) {
+          return res.status(400).send({ status: 400, message: "Invalid employee ID" });
+      }
+
+      // Fetch the logged-in user's company details
+      const userIdFromToken = req.userIdFromToken; // Get user ID from token
+      const user = await User.findById(userIdFromToken).select('company');
+
+      if (!user) {
+          return res.status(404).send({ message: "User not found" });
+      }
+
+      // Check if employee belongs to the logged-in user's company
+      const employee = await User.findById(employeeId);
+      if (!employee || employee.company._id.toString() !== user.company._id.toString()) {
+          return res.status(403).send({ message: "You are not authorized to update this employee." });
+      }
+
+      // Update the employee details
+      const updatedEmployee = await User.findByIdAndUpdate(
+          employeeId,
+          {
+              firstName,
+              lastName,
+              email,
+              password: password ? bcrypt.hashSync(password, 10) : employee.password, // Hash password only if it's provided
+              role,
+          },
+          { new: true, runValidators: true } // Return the updated document and run validators
+      );
+
+      if (!updatedEmployee) {
+          return res.status(404).send({ status: 404, message: "Employee not found" });
+      }
+
+      res.status(200).send({ message: "Employee updated successfully", employee: updatedEmployee });
+  } catch (err) {
+      console.error("Error updating employee", err);
+      res.status(500).send({ message: "Error updating employee", error: err });
+  }
+});
+
+
+
+
+
+// Delete employee
+router.delete("/deleteEmployee/:id", tokenVerification, async (req, res) => {
+  try {
+      const employeeId = req.params.id;
+
+      // Validate the employee ID
+      if (!mongoose.isValidObjectId(employeeId)) {
+          return res.status(400).send({ status: 400, message: "Invalid employee ID" });
+      }
+
+      // Fetch the logged-in user's company details
+      const userIdFromToken = req.userIdFromToken; // Get user ID from token
+      const user = await User.findById(userIdFromToken).select('company');
+
+      if (!user) {
+          return res.status(404).send({ message: "User not found" });
+      }
+
+      // Check if employee belongs to the logged-in user's company
+      const employee = await User.findById(employeeId);
+      if (!employee || employee.company._id.toString() !== user.company._id.toString()) {
+          return res.status(403).send({ message: "You are not authorized to delete this employee." });
+      }
+
+      const deletedEmployee = await User.findByIdAndDelete(employeeId);
+
+      if (!deletedEmployee) {
+          return res.status(404).send({ status: 404, message: "Employee not found" });
+      }
+
+      res.status(200).send({ message: "Employee deleted successfully", employee: deletedEmployee });
+  } catch (err) {
+      console.error("Error deleting employee", err);
+      res.status(500).send({ message: "Error deleting employee", error: err });
+  }
+});
+
+
+
+
+
+
+
+
 // Story creation route
 router.post("/stories", tokenVerification, async (req, res) => {
   try {
