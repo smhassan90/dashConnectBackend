@@ -38,31 +38,29 @@ const Company = require("../models/Company");
 
 router.post("/create", async (req, res) => {
   try {
-      // Company ki details ko request body se lein
       const { companyName, updateDate, Status, firstName, lastName, email, password } = req.body;
 
-      // Company create karen
       const company = await Company.create({
           companyName,
           updateDate,
           Status,
       });
 
-      // User create karen with company details including ID
+      const hashedPassword = bcrypt.hashSync(password, 10); // Hash the password
+
       const user = await User.create({
           firstName,
           lastName,
           email,
-          password,
-          company: {  // Company ki details ko user mein store karen
-              _id: company._id, // Company ki ID ko user mein store karna
+          password: hashedPassword, // Store the hashed password
+          company: {  
+              _id: company._id, 
               companyName: company.companyName,
               updateDate: company.updateDate,
               Status: company.Status,
           },
       });
 
-      // User ki details ke sath company ki details bhejna
       const userWithCompany = await User.findById(user._id);
 
       res.status(201).json({ user: userWithCompany });
@@ -73,20 +71,115 @@ router.post("/create", async (req, res) => {
 
 
 
+
+// Add employee route
+router.post("/addEmployee", tokenVerification, async (req, res) => {
+  try {
+    const { firstName, lastName, email, password, role } = req.body;
+    
+    // Token se user ID nikalna
+    const userIdFromToken = req.userIdFromToken;
+
+    // User ko fetch karna
+    const user = await User.findById(userIdFromToken);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Company ka data nikalna
+    const company = user.company;
+
+    // Input validation
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    // Check for existing email
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ message: "Email already in use." });
+    }
+
+    // Password hashing
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    // Create user with company details
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      role: role || "employee", // Default role to 'employee'
+      company: {
+        _id: company._id, 
+        companyName: company.companyName,
+        updateDate: company.updateDate,
+        Status: company.Status,
+      },
+    });
+
+    res.status(201).json({ user: newUser });
+  } catch (error) {
+    console.error("Error adding employee:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+
+
 // Login route
+// router.post("/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     const user = await User.findOne({ email });
+
+//     if (user) {
+//       const checkPassword = bcrypt.compareSync(password, user.password);
+
+//       if (checkPassword) {
+//         const token = jwt.sign(
+//           { id: user._id, email: user.email },
+//           process.env.JWT_SECRET
+//         ); // Storing user ID in token
+//         res.status(200).send({
+//           status: 200,
+//           user: {
+//             id: user._id,
+//             email: user.email,
+//             firstName: user.firstName,
+//             lastName: user.lastName,
+//             companyName: user.companyName,
+//           },
+//           message: "Login successful",
+//           token,
+//         });
+//       } else {
+//         res.status(401).send({ status: 401, message: "Incorrect Password" });
+//       }
+//     } else {
+//       res.status(404).send({ status: 404, message: "User not found" });
+//     }
+//   } catch (error) {
+//     console.error("loginError", error);
+//     res.status(500).send({ status: 500, error: "Internal Server Error" });
+//   }
+// });
+
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
     if (user) {
-      const checkPassword = bcrypt.compareSync(password, user.password);
+      const checkPassword = bcrypt.compareSync(password, user.password); // Compare plaintext with hashed
 
       if (checkPassword) {
         const token = jwt.sign(
           { id: user._id, email: user.email },
           process.env.JWT_SECRET
-        ); // Storing user ID in token
+        );
         res.status(200).send({
           status: 200,
           user: {
@@ -110,6 +203,9 @@ router.post("/login", async (req, res) => {
     res.status(500).send({ status: 500, error: "Internal Server Error" });
   }
 });
+
+
+
 
 // Story creation route
 router.post("/stories", tokenVerification, async (req, res) => {

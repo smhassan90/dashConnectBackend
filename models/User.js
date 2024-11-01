@@ -20,11 +20,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    role: {
+      type: String,
+      default: "owner",
+    },
     company: {
       type: {
         companyName: {
           type: String,
-          required: true,
         },
         updateDate: {
           type: Date,
@@ -35,12 +38,13 @@ const userSchema = new mongoose.Schema(
           default: 1,
         },
       },
-      required: true,
+      required: false, 
     },
   },
   {
     timestamps: true,
   }
 );
+
 
 module.exports = mongoose.model("User", userSchema);
