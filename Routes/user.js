@@ -257,4 +257,33 @@ router.delete("/nukeCompanies", async (req, res) => {
   }
 });
 
+// create --> Select API to fetch all users in the same company
+router.get("/selectAllUsers", tokenVerification, async (req, res) => {
+  try {
+    // Retrieve user ID from token
+    const userIdFromToken = req.userIdFromToken;
+
+    // Find the user and get their company ID
+    const user = await User.findById(userIdFromToken);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const companyId = user.company._id;
+
+    // Find all users associated with the same company ID
+    const usersInCompany = await User.find({ "company._id": companyId });
+
+    // Return the list of users in the same company
+    res.status(200).json({ users: usersInCompany });
+  } catch (error) {
+    console.error("Error fetching users in company:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+
+
+
+
 module.exports = router;
