@@ -9,6 +9,7 @@ const tokenVerification = require("../config/tokenVerification");
 const Story = require("../models/story");
 const mongoose = require("mongoose");
 const Company = require("../models/Company"); 
+const nodemailer = require('nodemailer')
 
 // create --> user API
 router.post("/create", async (req, res) => {
@@ -292,18 +293,70 @@ router.put("/changePassword", tokenVerification, async (req, res) => {
     const {oldPassword, newPassword } = req.body; 
     const userId = req.userIdFromToken;
   
-    const user = await User.findById(userId).select('');
-    const checkPassword = bcrypt.compareSync(oldPassword, user.password);
-    if(checkPassword) {
-      user.password = bcrypt.hashSync(newPassword, 10); ;
-      user.save();
-      res.status(200).send({ message: "password Change" });
-    } else {
-      res.status(500).send({ message: "Incorrect old password" });
+    const user = await User.findById(userId)
+
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
     }
-  }catch (error) {
-      res.status(500).json({ message: error.message });
+
+    const checkPassword = bcrypt.compareSync(oldPassword, user.password);
+
+    if(!checkPassword) {
+      return res.status(400).send({ message: "Incorrect old password" });
+    } 
+
+      user.password = bcrypt.hashSync(newPassword, 10); ;
+      await user.save();
+      res.status(200).send({ message: "Password changed successfully" });
+      
+  } catch (error) {
+    console.error("Error changing password:", error);
+    res.status(500).send({ message: "Internal server error" });
     }
 });
+
+
+
+
+
+
+// Forgot Password Route
+
+router.post('/forgotPassword', (req, res) => {
+  const {email} = req.body;
+  User.findOne({email: email})
+  .then(user => {
+      if(!user) {
+          return res.send({Status: "User not existed"})
+      } 
+      const token = jwt.sign({id: user._id}, "jwt_secret_key", {expiresIn: "1d"})
+      var transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: 'youremail@gmail.com',
+            pass: 'your password'
+          }
+        });
+        
+        var mailOptions = {
+          from: 'youremail@gmail.com',
+          to: 'user email@gmail.com',
+          subject: 'Reset Password Link',
+          text: `http://localhost:5173/reset_password/${user._id}/${token}`
+        };
+        
+        transporter.sendMail(mailOptions, function(error, info){
+          if (error) {
+            console.log(error);
+          } else {
+            return res.send({Status: "Success"})
+          }
+        });
+  })
+})
+
+
+
+
 
 module.exports = router;
