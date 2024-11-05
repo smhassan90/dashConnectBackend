@@ -285,5 +285,25 @@ router.get("/selectAllUsers", tokenVerification, async (req, res) => {
 
 
 
+// Change Pssword
+
+router.put("/changePassword", tokenVerification, async (req, res) => {
+  try {
+    const {oldPassword, newPassword } = req.body; 
+    const userId = req.userIdFromToken;
+  
+    const user = await User.findById(userId).select('');
+    const checkPassword = bcrypt.compareSync(oldPassword, user.password);
+    if(checkPassword) {
+      user.password = bcrypt.hashSync(newPassword, 10); ;
+      user.save();
+      res.status(200).send({ message: "password Change" });
+    } else {
+      res.status(500).send({ message: "Incorrect old password" });
+    }
+  }catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+});
 
 module.exports = router;
