@@ -1,4 +1,4 @@
-// Routes/auth.js
+// Routes/user.js
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
@@ -10,32 +10,7 @@ const Story = require("../models/story");
 const mongoose = require("mongoose");
 const Company = require("../models/Company"); 
 
-// Register route
-// router.post("/register", async (req, res) => {
-//   try {
-//     const { firstName, lastName, email, companyName, password } = req.body;
-//     const hashedPassword = bcrypt.hashSync(password, 10);
-
-//     const user = await User.create({
-//       firstName,
-//       lastName,
-//       email,
-//       companyName,
-//       password: hashedPassword,
-//     });
-
-//     const data = user.toObject();
-//     delete data.password;
-
-//     res
-//       .status(201)
-//       .send({ status: 201, data, message: "User Created Successfully" });
-//   } catch (err) {
-//     console.error("postApiError", err);
-//     res.status(500).send({ status: 500, error: err });
-//   }
-// });
-
+// create --> user API
 router.post("/create", async (req, res) => {
   try {
       const { companyName, updateDate, Status, firstName, lastName, email, password } = req.body;
@@ -72,21 +47,21 @@ router.post("/create", async (req, res) => {
 
 
 
-// Add employee route
+// create --> Add employee API
 router.post("/addEmployee", tokenVerification, async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
     
-    // Token se user ID nikalna
+    // Extract ID from token
     const userIdFromToken = req.userIdFromToken;
 
-    // User ko fetch karna
+    // Fetch user
     const user = await User.findById(userIdFromToken);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Company ka data nikalna
+    // Extract company data
     const company = user.company;
 
     // Input validation
@@ -100,16 +75,16 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
       return res.status(409).json({ message: "Email already in use." });
     }
 
-    // Password hashing
+   
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    // Create user with company details
+    
     const newUser = await User.create({
       firstName,
       lastName,
       email,
       password: hashedPassword,
-      role: role || "employee", // Default role to 'employee'
+      role: role || "employee", 
       company: {
         _id: company._id, 
         companyName: company.companyName,
@@ -128,45 +103,7 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
 
 
 
-// Login route
-// router.post("/login", async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-//     const user = await User.findOne({ email });
-
-//     if (user) {
-//       const checkPassword = bcrypt.compareSync(password, user.password);
-
-//       if (checkPassword) {
-//         const token = jwt.sign(
-//           { id: user._id, email: user.email },
-//           process.env.JWT_SECRET
-//         ); // Storing user ID in token
-//         res.status(200).send({
-//           status: 200,
-//           user: {
-//             id: user._id,
-//             email: user.email,
-//             firstName: user.firstName,
-//             lastName: user.lastName,
-//             companyName: user.companyName,
-//           },
-//           message: "Login successful",
-//           token,
-//         });
-//       } else {
-//         res.status(401).send({ status: 401, message: "Incorrect Password" });
-//       }
-//     } else {
-//       res.status(404).send({ status: 404, message: "User not found" });
-//     }
-//   } catch (error) {
-//     console.error("loginError", error);
-//     res.status(500).send({ status: 500, error: "Internal Server Error" });
-//   }
-// });
-
-
+// create --> Login API
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -208,11 +145,10 @@ router.post("/login", async (req, res) => {
 
 
 
-// Update employee
-router.put("/updateEmployee/:id", tokenVerification, async (req, res) => {
+// create --> Update Employee
+router.put("/updateEmployee", tokenVerification, async (req, res) => {
   try {
-      const employeeId = req.params.id; // Get the employee ID from the request parameters
-      const { firstName, lastName, email, password, role } = req.body; // Destructure the request body
+      const { employeeId, firstName, lastName, email, password, role } = req.body; // Get employeeId from the request body
 
       // Validate the employee ID
       if (!mongoose.isValidObjectId(employeeId)) {
@@ -261,10 +197,10 @@ router.put("/updateEmployee/:id", tokenVerification, async (req, res) => {
 
 
 
-// Delete employee
-router.delete("/deleteEmployee/:id", tokenVerification, async (req, res) => {
+// create --> Delete Employee
+router.delete("/deleteEmployee", tokenVerification, async (req, res) => {
   try {
-      const employeeId = req.params.id;
+      const { employeeId } = req.body; // Get employeeId from the request body
 
       // Validate the employee ID
       if (!mongoose.isValidObjectId(employeeId)) {
@@ -297,118 +233,77 @@ router.delete("/deleteEmployee/:id", tokenVerification, async (req, res) => {
       res.status(500).send({ message: "Error deleting employee", error: err });
   }
 });
-
-
-
-
-
-
-
-
-// Story creation route
-router.post("/stories", tokenVerification, async (req, res) => {
+ 
+//  create --> Nuke Users API. It will delete all users from users collection
+router.delete("/nukeUsers", async (req, res) => {
   try {
-    const { storyName, description, integrations, complementaryDatasets } = req.body;
-    const userIdFromToken = req.userIdFromToken; // Use user ID from token
+    await User.deleteMany({}); // This command delete all users
 
-    // Fetch the user to include in the story
-    const user = await User.findById(userIdFromToken).select('firstName lastName email companyName');
+    res.status(200).json({ message: "All users have been deleted." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
+
+// create --> Nuke Companies API. It will delete all companies from companies collection
+router.delete("/nukeCompanies", async (req, res) => {
+  try {
+    await Company.deleteMany({}); // This command delete all companies
+
+    res.status(200).json({ message: "All companies have been deleted." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// create --> Select API to fetch all users in the same company
+router.get("/selectAllUsers", tokenVerification, async (req, res) => {
+  try {
+    // Retrieve user ID from token
+    const userIdFromToken = req.userIdFromToken;
+
+    // Find the user and get their company ID
+    const user = await User.findById(userIdFromToken);
     if (!user) {
-      return res.status(404).send({ message: "User not found" });
+      return res.status(404).json({ message: "User not found." });
     }
 
-    const newStory = new Story({
-      storyName,
-      description,
-      integrations,
-      complementaryDatasets,
-      storyCreatedBy: userIdFromToken, // Use user's ID here
-      userDetails: { // Store user details in the story
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        companyName: user.companyName,
-      },
-    });
+    const companyId = user.company._id;
 
-    await newStory.save();
-    res.status(201).send({ message: "Story created successfully", story: newStory });
-  } catch (err) {
-    console.error("Error creating story", err);
-    res.status(500).send({ message: "Error creating story", error: err });
+    // Find all users associated with the same company ID
+    const usersInCompany = await User.find({ "company._id": companyId });
+
+    // Return the list of users in the same company
+    res.status(200).json({ users: usersInCompany });
+  } catch (error) {
+    console.error("Error fetching users in company:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
 
 
-// Get all stories route
-router.get("/stories", async (req, res) => {
+
+// Change Pssword
+
+router.put("/changePassword", tokenVerification, async (req, res) => {
   try {
-    const stories = await Story.find().populate(
-      "storyCreatedBy",
-      "firstName lastName email companyName"
-    ); // Populate user details
-    res.status(200).send({ message: "Stories fetched successfully", stories });
-  } catch (err) {
-    console.error("Error fetching stories", err);
-    res.status(500).send({ message: "Error fetching stories", error: err });
-  }
-});
-
-// Story update route
-router.put("/stories/:id", tokenVerification, async (req, res) => {
-  try {
-    const storyId = req.params.id; // Get the story ID from the request parameters
-    const { storyName, description, integrations, complementaryDatasets } =
-      req.body;
-
-    // Validate the story ID
-    if (!mongoose.isValidObjectId(storyId)) {
-      return res.status(400).send({ status: 400, message: "Invalid story ID" });
+    const {oldPassword, newPassword } = req.body; 
+    const userId = req.userIdFromToken;
+  
+    const user = await User.findById(userId).select('');
+    const checkPassword = bcrypt.compareSync(oldPassword, user.password);
+    if(checkPassword) {
+      user.password = bcrypt.hashSync(newPassword, 10); ;
+      user.save();
+      res.status(200).send({ message: "password Change" });
+    } else {
+      res.status(500).send({ message: "Incorrect old password" });
     }
-
-    const updatedStory = await Story.findByIdAndUpdate(
-      storyId,
-      { storyName, description, integrations, complementaryDatasets },
-      { new: true, runValidators: true } // Return the updated document and run validators
-    );
-
-    if (!updatedStory) {
-      return res.status(404).send({ status: 404, message: "Story not found" });
+  }catch (error) {
+      res.status(500).json({ message: error.message });
     }
-
-    res
-      .status(200)
-      .send({ message: "Story updated successfully", story: updatedStory });
-  } catch (err) {
-    console.error("Error updating story", err);
-    res.status(500).send({ message: "Error updating story", error: err });
-  }
-});
-
-// Story delete route
-router.delete("/stories/:id", tokenVerification, async (req, res) => {
-  try {
-    const storyId = req.params.id;
-
-    if (!mongoose.isValidObjectId(storyId)) {
-      return res.status(400).send({ status: 400, message: "Invalid story ID" });
-    }
-
-    const deletedStory = await Story.findByIdAndDelete(storyId);
-
-    if (!deletedStory) {
-      return res.status(404).send({ status: 404, message: "Story not found" });
-    }
-
-    res
-      .status(200)
-      .send({ message: "Story deleted successfully", story: deletedStory });
-  } catch (err) {
-    console.error("Error deleting story", err);
-    res.status(500).send({ message: "Error deleting story", error: err });
-  }
 });
 
 module.exports = router;
