@@ -8,8 +8,6 @@ require("dotenv/config");
 const tokenVerification = require("../config/tokenVerification");
 const mongoose = require("mongoose");
 const Company = require("../models/Company"); 
-
- 
 const multer = require('multer');
 const path = require('path');
 
@@ -319,97 +317,46 @@ router.put("/changePassword", tokenVerification, async (req, res) => {
 
 
 
-
-
-
-// Forgot Password Route
-
-// router.post('/forgotPassword', (req, res) => {
-//   const {email} = req.body;
-//   User.findOne({email: email})
-//   .then(user => {
-//       if(!user) {
-//           return res.send({Status: "User not existed"})
-//       } 
-//       const token = jwt.sign({id: user._id}, "jwt_secret_key", {expiresIn: "1d"})
-//       var transporter = nodemailer.createTransport({
-//           service: 'gmail',
-//           auth: {
-//             user: 'youremail@gmail.com',
-//             pass: 'your password'
-//           }
-//         });
-        
-//         var mailOptions = {
-//           from: 'youremail@gmail.com',
-//           to: 'user email@gmail.com',
-//           subject: 'Reset Password Link',
-//           text: `http://localhost:5173/reset_password/${user._id}/${token}`
-//         };
-        
-//         transporter.sendMail(mailOptions, function(error, info){
-//           if (error) {
-//             console.log(error);
-//           } else {
-//             return res.send({Status: "Success"})
-//           }
-//         });
-//   })
-// })
-
-
-
-// Upload picture api
-
-
-// Define storage configuration for multer
+// Define multer storage configuration for saving the profile pictures
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../uploads/profile_pictures'));
+    cb(null, path.join(__dirname, '../uploads/profile_pictures'));  // Folder where the image will be saved
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + file.originalname;
-    cb(null, uniqueSuffix);
+    const uniqueSuffix = Date.now();  // Generate a unique filename based on the current timestamp
+    cb(null, uniqueSuffix + path.extname(file.originalname));  // Save the file with the unique timestamp and the original extension
   }
 });
 
 const upload = multer({ storage: storage });
 
-// Profile picture upload route
-router.post("/uploadProfilePicture", tokenVerification, upload.single("profilePicture"), async (req, res) => {
-  try {
-    const userId = req.userIdFromToken; // Assuming userId is available from the token
 
-    // Ensure the file is uploaded
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded." });
+router.post("/uploadImage", tokenVerification, upload.single("profile_pictures"), async (req, res) => {
+  try {
+   
+    const userId = req.userIdFromToken;  
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is missing." });
     }
 
-    // Get the image path
-    const profilePicturePath = path.join('/uploads/profile_pictures', req.file.filename);
-
-    // Find and update the user with the profile picture path
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { profilePicture: profilePicturePath }, // Update the user's profile picture
-      { new: true } // Return the updated document
-    );
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
 
-    res.status(200).json({
-      message: "Profile picture uploaded successfully",
-      profilePicture: profilePicturePath,
-    });
+    const imagePath = req.file.path;  
+
+    user.profilePicture = imagePath;  
+    await user.save();  
+
+    res.status(200).json({ message: "Profile picture uploaded successfully.", path: imagePath });
   } catch (error) {
     console.error("Error uploading profile picture:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: "Error uploading profile picture.", error: error.message });
   }
 });
-
-
 
 
 module.exports = router;
