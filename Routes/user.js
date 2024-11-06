@@ -362,43 +362,51 @@ router.put("/changePassword", tokenVerification, async (req, res) => {
 
 // Upload picture api
 
-// Multer storage configuration
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Saves in 'uploads' folder
+    cb(null, 'uploads/'); // Project's uploads folder
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now();
-    cb(null, uniqueSuffix + '-' + file.originalname); // Unique file name
+    cb(null, uniqueSuffix + '-' + file.originalname);
   }
 });
 
 const upload = multer({ storage: storage });
 
-// Route for uploading an image (only for logged-in users)
+
+// Upload profile picture for logged-in users
 router.post("/uploadImage", tokenVerification, upload.single("image"), async (req, res) => {
+  if (!req.file) return res.status(400).json({ status: 'No file uploaded' });
+
   const imageName = req.file.filename;
 
   try {
-    await Images.create({ image: imageName, userId: req.userId }); // Save userId with image if needed
+    // Update or create profile picture for the user
+    const existingImage = await Images.findOne({ userId: req.user.id });
+    if (existingImage) {
+      existingImage.image = imageName;
+      await existingImage.save();
+    } else {
+      await Images.create({ image: imageName, userId: req.user.id });
+    }
     res.json({ status: "ok", image: imageName });
   } catch (error) {
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 });
 
-// Route to get all uploaded images
-router.get("/getImage", async (req, res) => {
+// Get profile picture of the logged-in user
+router.get("/getProfilePicture", tokenVerification, async (req, res) => {
   try {
-    const images = await Images.find({});
-    res.send({
-      status: "ok",
-      data: images
-    });
+    const userImage = await Images.findOne({ userId: req.user.id });
+    if (!userImage) {
+      return res.status(404).json({ status: 'No profile picture found' });
+    }
+    res.json({ status: "ok", image: userImage.image });
   } catch (error) {
-    res.status(500).send({ status: "error", message: error.message });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 });
-
 
 module.exports = router;
