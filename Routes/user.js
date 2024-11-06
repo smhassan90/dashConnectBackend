@@ -362,51 +362,47 @@ router.put("/changePassword", tokenVerification, async (req, res) => {
 
 // Upload picture api
 
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Project's uploads folder
+    cb(null, 'uploaded')
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now();
-    cb(null, uniqueSuffix + '-' + file.originalname);
+    const uniqueSuffix = Date.now() 
+    cb(null, uniqueSuffix + file.originalname)
   }
-});
+})
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage: storage })
 
-
-// Upload profile picture for logged-in users
-router.post("/uploadImage", tokenVerification, upload.single("image"), async (req, res) => {
-  if (!req.file) return res.status(400).json({ status: 'No file uploaded' });
-
-  const imageName = req.file.filename;
-
+router.post("/uploadImage",upload.single("image") ,async(req,res)=>{
+  console.log(req.body);
+  const imageName = req.file.filename
+    
   try {
-    // Update or create profile picture for the user
-    const existingImage = await Images.findOne({ userId: req.user.id });
-    if (existingImage) {
-      existingImage.image = imageName;
-      await existingImage.save();
-    } else {
-      await Images.create({ image: imageName, userId: req.user.id });
-    }
-    res.json({ status: "ok", image: imageName });
+    await Images.create({image : imageName})
+    res.json({status : "ok"})
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
+    res.json({status : error})
   }
-});
+})
 
-// Get profile picture of the logged-in user
-router.get("/getProfilePicture", tokenVerification, async (req, res) => {
+
+router.get("/getImage",async(req,res)=>{
   try {
-    const userImage = await Images.findOne({ userId: req.user.id });
-    if (!userImage) {
-      return res.status(404).json({ status: 'No profile picture found' });
-    }
-    res.json({ status: "ok", image: userImage.image });
+    Images.find({}).then(data=>{
+      res.send({
+        status : "ok",
+        data : data
+      })
+    })
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
+    
   }
-});
+})
+
+
+
+
 
 module.exports = router;
