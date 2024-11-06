@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    profilePicture: {
+      type: String, 
+      default: null,
+    },
     role: {
       type: String,
       default: "owner",

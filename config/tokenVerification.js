@@ -11,12 +11,11 @@ const tokenVerification = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userIdFromToken = decoded.id; // Change email to user ID
+    req.userIdFromToken = decoded.id; // Provide the user ID from token
     next();
   } catch (err) {
     return res.status(400).send({ message: "Invalid token." });
   }
 };
-
 
 module.exports = tokenVerification;

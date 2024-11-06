@@ -10,9 +10,8 @@ const Story = require("../models/story");
 const mongoose = require("mongoose");
 const Company = require("../models/Company"); 
 const nodemailer = require('nodemailer')
-const multer  = require('multer')
-const Images = require('../models/Images')
- 
+const multer = require('multer');
+const path = require('path');
 
 // create --> user API
 router.post("/create", async (req, res) => {
@@ -365,42 +364,46 @@ router.put("/changePassword", tokenVerification, async (req, res) => {
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploaded')
+    cb(null, path.join(__dirname, '../uploads/profile_pictures'));
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() 
-    cb(null, uniqueSuffix + file.originalname)
+    const uniqueSuffix = Date.now() + '-' + file.originalname;
+    cb(null, uniqueSuffix);
   }
-})
+});
 
-const upload = multer({ storage: storage })
+const upload = multer({ storage: storage });
 
-router.post("/uploadImage",upload.single("image") ,async(req,res)=>{
-  console.log(req.body);
-  const imageName = req.file.filename
-    
+// Profile picture upload route
+router.post("/uploadProfilePicture", tokenVerification, upload.single("profilePicture"), async (req, res) => {
   try {
-    await Images.create({image : imageName})
-    res.json({status : "ok"})
+    const userId = req.userIdFromToken;
+
+    // Ensure the file is uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded." });
+    }
+
+    // Get the image path
+    const profilePicturePath = path.join('/uploads/profile_pictures', req.file.filename);
+
+    // Update user document with the profile picture path
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profilePicture: profilePicturePath },
+      { new: true } // Return the updated document
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.status(200).json({ message: "Profile picture uploaded successfully", profilePicture: profilePicturePath });
   } catch (error) {
-    res.json({status : error})
+    console.error("Error uploading profile picture:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
-})
-
-
-router.get("/getImage",async(req,res)=>{
-  try {
-    Images.find({}).then(data=>{
-      res.send({
-        status : "ok",
-        data : data
-      })
-    })
-  } catch (error) {
-    
-  }
-})
-
+});
 
 
 
