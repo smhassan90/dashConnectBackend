@@ -10,6 +10,9 @@ const Story = require("../models/story");
 const mongoose = require("mongoose");
 const Company = require("../models/Company"); 
 const nodemailer = require('nodemailer')
+const multer  = require('multer')
+const Images = require('../models/Images')
+ 
 
 // create --> user API
 router.post("/create", async (req, res) => {
@@ -322,41 +325,80 @@ router.put("/changePassword", tokenVerification, async (req, res) => {
 
 // Forgot Password Route
 
-router.post('/forgotPassword', (req, res) => {
-  const {email} = req.body;
-  User.findOne({email: email})
-  .then(user => {
-      if(!user) {
-          return res.send({Status: "User not existed"})
-      } 
-      const token = jwt.sign({id: user._id}, "jwt_secret_key", {expiresIn: "1d"})
-      var transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: 'youremail@gmail.com',
-            pass: 'your password'
-          }
-        });
+// router.post('/forgotPassword', (req, res) => {
+//   const {email} = req.body;
+//   User.findOne({email: email})
+//   .then(user => {
+//       if(!user) {
+//           return res.send({Status: "User not existed"})
+//       } 
+//       const token = jwt.sign({id: user._id}, "jwt_secret_key", {expiresIn: "1d"})
+//       var transporter = nodemailer.createTransport({
+//           service: 'gmail',
+//           auth: {
+//             user: 'youremail@gmail.com',
+//             pass: 'your password'
+//           }
+//         });
         
-        var mailOptions = {
-          from: 'youremail@gmail.com',
-          to: 'user email@gmail.com',
-          subject: 'Reset Password Link',
-          text: `http://localhost:5173/reset_password/${user._id}/${token}`
-        };
+//         var mailOptions = {
+//           from: 'youremail@gmail.com',
+//           to: 'user email@gmail.com',
+//           subject: 'Reset Password Link',
+//           text: `http://localhost:5173/reset_password/${user._id}/${token}`
+//         };
         
-        transporter.sendMail(mailOptions, function(error, info){
-          if (error) {
-            console.log(error);
-          } else {
-            return res.send({Status: "Success"})
-          }
-        });
-  })
-})
+//         transporter.sendMail(mailOptions, function(error, info){
+//           if (error) {
+//             console.log(error);
+//           } else {
+//             return res.send({Status: "Success"})
+//           }
+//         });
+//   })
+// })
 
 
 
+// Upload picture api
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // Saves in 'uploads' folder
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now();
+    cb(null, uniqueSuffix + '-' + file.originalname); // Unique file name
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// Route for uploading an image (only for logged-in users)
+router.post("/uploadImage", tokenVerification, upload.single("image"), async (req, res) => {
+  const imageName = req.file.filename;
+
+  try {
+    await Images.create({ image: imageName, userId: req.userId }); // Save userId with image if needed
+    res.json({ status: "ok", image: imageName });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+});
+
+// Route to get all uploaded images
+router.get("/getImage", async (req, res) => {
+  try {
+    const images = await Images.find({});
+    res.send({
+      status: "ok",
+      data: images
+    });
+  } catch (error) {
+    res.status(500).send({ status: "error", message: error.message });
+  }
+});
 
 
 module.exports = router;
