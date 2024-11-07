@@ -10,6 +10,9 @@ const mongoose = require("mongoose");
 const Company = require("../models/Company"); 
 const multer = require('multer');
 const path = require('path');
+const randomstring = require('randomstring')
+const sendMail = require('../config/nodemailer')
+
 
 // create --> user API
 router.post("/create", async (req, res) => {
@@ -44,7 +47,6 @@ router.post("/create", async (req, res) => {
       res.status(500).json({ message: error.message });
   }
 });
-
 
 
 
@@ -103,7 +105,6 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
  
 
 
-
 // create --> Login API
 router.post("/login", async (req, res) => {
   try {
@@ -144,9 +145,7 @@ router.post("/login", async (req, res) => {
 
 
 
-
-
-// create --> Update Employee
+// create --> Update Employee API
 router.put("/updateEmployee", tokenVerification, async (req, res) => {
   try {
       const { employeeId, firstName, lastName, email, password, role } = req.body; // Get employeeId from the request body
@@ -196,9 +195,7 @@ router.put("/updateEmployee", tokenVerification, async (req, res) => {
 
 
 
-
-
-// create --> Delete Employee
+// create --> Delete Employee API
 router.delete("/deleteEmployee", tokenVerification, async (req, res) => {
   try {
       const { employeeId } = req.body; // Get employeeId from the request body
@@ -235,6 +232,8 @@ router.delete("/deleteEmployee", tokenVerification, async (req, res) => {
   }
 });
  
+
+
 //  create --> Nuke Users API. It will delete all users from users collection
 router.delete("/nukeUsers", async (req, res) => {
   try {
@@ -245,6 +244,7 @@ router.delete("/nukeUsers", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 
 
 // create --> Nuke Companies API. It will delete all companies from companies collection
@@ -258,7 +258,9 @@ router.delete("/nukeCompanies", async (req, res) => {
   }
 });
 
-// create --> Select API to fetch all users in the same company
+
+
+// create --> API for fetch all users in the same company
 router.get("/selectAllUsers", tokenVerification, async (req, res) => {
   try {
     // Retrieve user ID from token
@@ -285,9 +287,7 @@ router.get("/selectAllUsers", tokenVerification, async (req, res) => {
 
 
 
-
-// Change Pssword
-
+// create --> Change Password API
 router.put("/changePassword", tokenVerification, async (req, res) => {
   try {
     const {oldPassword, newPassword } = req.body; 
@@ -317,7 +317,7 @@ router.put("/changePassword", tokenVerification, async (req, res) => {
 
 
 
-
+// Upload image API
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     return cb(null,"./uploads");  
@@ -328,7 +328,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-
 
 router.post("/uploadImage", tokenVerification, upload.single("profileImage"), async (req, res) => {
   try {
@@ -357,6 +356,68 @@ router.post("/uploadImage", tokenVerification, upload.single("profileImage"), as
     res.status(500).json({ message: "Error uploading profile picture.", error: error.message });
   }
 });
+
+
+
+// create --> Forgot password API
+
+router.post("/forgotPassword", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email: email });
+
+    if (user) {
+      const token = randomstring.generate();
+
+      const updateData = await User.updateOne(
+        { _id: user._id },
+        { $set: { token: token } }
+      );
+
+      await sendMail(user.email, token);
+
+      res.status(200).send({
+        success: true,
+        message: "Check your email for reset password link",
+      });
+    } else {
+      res.status(200).send({ success: false, message: "Invalid email id" });
+    }
+  } catch (error) {
+    res.status(400).send(error.message);
+  }
+});
+
+
+
+
+router.post("/resetPassword", async (req, res) => {
+  try {
+    const { token } = req.query;
+    const { password } = req.body;  
+
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    const user = await User.findOne({ token: token });
+
+    if (user) {
+      const updateData = await User.findByIdAndUpdate(
+        { _id: user._id },
+        { $set: { password: hashedPassword, token: "" } },
+        { new: true }
+      );
+      res
+        .status(200)
+        .send({ success: true, message: "Password has been updated" });
+    } else {
+      res.status(200).send({ success: false, message: "Token has expired" });
+    }
+  } catch (error) {
+    res.status(400).send(error.message);
+  }
+});
+
 
 
 module.exports = router;
