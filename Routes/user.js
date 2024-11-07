@@ -317,21 +317,20 @@ router.put("/changePassword", tokenVerification, async (req, res) => {
 
 
 
-// Define multer storage configuration for saving the profile pictures
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../uploads/profile_pictures'));  // Folder where the image will be saved
+    return cb(null,"./uploads");  
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now();  // Generate a unique filename based on the current timestamp
-    cb(null, uniqueSuffix + path.extname(file.originalname));  // Save the file with the unique timestamp and the original extension
+    return cb(null, `${Date.now()}-${file.originalname}`);  
   }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 
-router.post("/uploadImage", tokenVerification, upload.single("profile_pictures"), async (req, res) => {
+router.post("/uploadImage", tokenVerification, upload.single("profileImage"), async (req, res) => {
   try {
    
     const userId = req.userIdFromToken;  
@@ -344,6 +343,7 @@ router.post("/uploadImage", tokenVerification, upload.single("profile_pictures")
 
     if (!user) {
       return res.status(404).json({ message: "User not found." });
+
     }
 
     const imagePath = req.file.path;  
