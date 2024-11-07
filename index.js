@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const app = express();
 const dotenv = require('dotenv/config');
 const cors = require('cors');
+const path = require('path');
 
 // Routes
 const authRoute = require('./Routes/user');
@@ -10,6 +11,7 @@ const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@hon
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 mongoose.connect(url)
     .then(() => {
