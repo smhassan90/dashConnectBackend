@@ -11,7 +11,7 @@ const Company = require("../models/Company");
 const multer = require('multer');
 const randomstring = require('randomstring')
 const sendMail = require('../config/nodemailer')
-const path = require('path');
+
 
 
 // create --> user API
@@ -327,13 +327,12 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({storage});
+const upload = multer({ storage });
 
 router.post("/uploadImage", tokenVerification, upload.single("profileImage"), async (req, res) => {
   try {
-    console.log(req.file);  // Check if req.file is populated
-    
-    const userId = req.userIdFromToken;
+   
+    const userId = req.userIdFromToken;  
 
     if (!userId) {
       return res.status(400).json({ message: "User ID is missing." });
@@ -343,16 +342,13 @@ router.post("/uploadImage", tokenVerification, upload.single("profileImage"), as
 
     if (!user) {
       return res.status(404).json({ message: "User not found." });
+
     }
 
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded." });
-    }
+    const imagePath = req.file.path;  
 
-    const imagePath = req.file.path;  // Make sure req.file is not undefined
-
-    user.profilePicture = imagePath;
-    await user.save();
+    user.profilePicture = imagePath;  
+    await user.save();  
 
     res.status(200).json({ message: "Profile picture uploaded successfully.", path: imagePath });
   } catch (error) {
@@ -360,7 +356,6 @@ router.post("/uploadImage", tokenVerification, upload.single("profileImage"), as
     res.status(500).json({ message: "Error uploading profile picture.", error: error.message });
   }
 });
-
 
 
 
