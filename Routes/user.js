@@ -9,7 +9,6 @@ const tokenVerification = require("../config/tokenVerification");
 const mongoose = require("mongoose");
 const Company = require("../models/Company"); 
 const multer = require('multer');
-const path = require('path');
 const randomstring = require('randomstring')
 const sendMail = require('../config/nodemailer')
 
@@ -359,7 +358,7 @@ router.post("/uploadImage", tokenVerification, upload.single("profileImage"), as
 
 
 
-// create --> Forgot password API
+// create --> Forgot password and Reset password API
 
 router.post("/forgotPassword", async (req, res) => {
   try {
@@ -394,8 +393,7 @@ router.post("/forgotPassword", async (req, res) => {
 
 router.post("/resetPassword", async (req, res) => {
   try {
-    const { token } = req.query;
-    const { password } = req.body;  
+    const { password , token } = req.body;  
 
     const hashedPassword = bcrypt.hashSync(password, 10);
 
