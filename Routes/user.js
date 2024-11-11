@@ -11,7 +11,7 @@ const Company = require("../models/Company");
 const multer = require('multer');
 const randomstring = require('randomstring')
 const sendMail = require('../config/nodemailer')
-
+const axios = require('axios')
 
 
 // create --> user API
@@ -415,6 +415,38 @@ router.post("/resetPassword", async (req, res) => {
     }
   } catch (error) {
     res.status(400).send(error.message);
+  }
+});
+
+
+
+// create --> testConnection API
+router.post("/testConnection", tokenVerification ,async (req, res) => {
+  const { apiKey, userId } = req.body;
+
+  if (!apiKey || !userId) {
+    return res.status(400).json({ error: "API key and user ID are required" });
+  }
+
+  try {
+    const response = await axios.get(
+      "https://acuityscheduling.com/api/v1/appointments?max=30",
+      {
+        auth : {
+          username: userId,
+          password: apiKey,
+        }
+      }
+    );
+    res.json({
+      message: "Appointment data fetched successfully",
+      data: response.data,
+    });
+  } catch (error) {
+    console.error("Error fetching appointments:", error.message);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch appointments from Acuity API" });
   }
 });
 
