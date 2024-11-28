@@ -440,7 +440,7 @@ router.post("/testConnection", tokenVerification ,async (req, res) => {
     );
     res.json({
       message: "Appointment data fetched successfully",
-      data: response.data,
+      // data: response.data,
     });
   } catch (error) {
     console.error("Error fetching appointments:", error.message);
