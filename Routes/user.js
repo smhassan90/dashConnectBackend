@@ -421,7 +421,7 @@ router.post("/resetPassword", async (req, res) => {
 
 
 // create --> testConnection API
-router.post("/testConnection", tokenVerification ,async (req, res) => {
+router.get("/testConnection", tokenVerification ,async (req, res) => {
   const { apiKey, userId } = req.body;
 
   if (!apiKey || !userId) {
@@ -449,6 +449,14 @@ router.post("/testConnection", tokenVerification ,async (req, res) => {
       .json({ error: "Failed to fetch appointments from Acuity API" });
   }
 });
+
+
+
+
+
+
+
+
 
 
 
