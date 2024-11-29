@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// Company Schema
+
 const companySchema = new mongoose.Schema({
   companyName: {
     type: String,
@@ -14,6 +14,10 @@ const companySchema = new mongoose.Schema({
   Status: {
     type: Number,
     default: 1,
+  },
+  integration: {
+    username: { type: String, default: null }, 
+    password: { type: String, default: null }, 
   },
 });
 
