@@ -429,9 +429,9 @@ router.post("/resetPassword", async (req, res) => {
 
 // create --> testConnection API
 router.get("/testConnection", tokenVerification ,async (req, res) => {
-  const { apiKey, userId } = req.body;
+  const { userId, apiKey } = req.body;
 
-  if (!apiKey || !userId) {
+  if (!userId || !apiKey) {
     return res.status(400).json({ error: "API key and user ID are required" });
   }
 
