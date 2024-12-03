@@ -535,7 +535,7 @@ cron.schedule('0 0 * * *', async () => {
 
 
 
-// create --> connect now API
+// create --> Integration API
 router.put("/updateIntegration", tokenVerification, async (req, res) => {
   const { username, password } = req.body;
 
