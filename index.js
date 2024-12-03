@@ -8,8 +8,8 @@ require("./Routes/user")
 
 // Routes
 const authRoute = require('./Routes/user');
-const url = `mongodb://localhost:27017`; // for local testing
-// const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@honeycluster.xggo8.mongodb.net/`
+// const url = `mongodb://localhost:27017`; // for local testing
+const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@honeycluster.xggo8.mongodb.net/`
 
 app.use(cors());
 app.use(express.json());
