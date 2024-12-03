@@ -115,7 +115,7 @@ router.post("/login", async (req, res) => {
     const company = user.company;
 
     if (user) {
-      const checkPassword = bcrypt.compareSync(password, user.password); // Compare plaintext with hashed
+      const checkPassword = bcrypt.compareSync(password, user.password); 
 
       if (checkPassword) {
         const token = jwt.sign(
@@ -139,6 +139,7 @@ router.post("/login", async (req, res) => {
           message: "Login successful",
           token,
         });
+
       } else {
         res.status(401).send({ status: 401, message: "Incorrect Password" });
       }
@@ -398,7 +399,6 @@ router.post("/forgotPassword", async (req, res) => {
 
 
 
-
 router.post("/resetPassword", async (req, res) => {
   try {
     const { password , token } = req.body;  
@@ -566,19 +566,13 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
       return res.status(404).json({ error: "Company not found." });
     }
 
-    // Step 4: Update the integration object
-    company.integration = { username, password }; 
-    await company.save();
+    // Step 4: Update only the username and password fields of the integration object
+    company.integration.username = username;
+    company.integration.password = password;
 
     res.status(200).json({
       message: "Integration updated successfully.",
-      company: {
-        _id: company._id, 
-        companyName: company.companyName,
-        updateDate: company.updateDate,
-        Status: company.Status,
-        Integration: company.integration,
-      },
+      company,
     });
   } catch (err) {
     console.error("Error Occurred:", err.message);
