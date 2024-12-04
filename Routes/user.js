@@ -502,6 +502,7 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
     console.error("Error Occurred:", err.message);
     res.status(500).json({ error: "Server error.", details: err.message });
   }
+  
 });
 
 
