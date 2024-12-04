@@ -428,7 +428,7 @@ router.post("/resetPassword", async (req, res) => {
 
 
 // create --> testConnection API
-router.get("/testConnection", tokenVerification ,async (req, res) => {
+router.post("/testConnection", tokenVerification ,async (req, res) => {
   const { userId, apiKey } = req.body;
 
   if (!userId || !apiKey) {
@@ -542,9 +542,7 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res
-      .status(400)
-      .json({ error: "Username and password are required." });
+    return res.status(400).json({ error: "Username and password are required." });
   }
 
   try {
@@ -568,9 +566,17 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
       return res.status(404).json({ error: "Company not found." });
     }
 
-    // Step 4: Update only the username and password fields of the integration object
+    // Step 4: Initialize integration object if it doesn't exist
+    if (!company.integration) {
+      company.integration = {}; // Initialize integration object if missing
+    }
+
+    // Step 5: Update the username and password fields of the integration object
     company.integration.username = username;
     company.integration.password = password;
+
+    // Step 6: Save the updated company document to the database
+    await company.save();
 
     res.status(200).json({
       message: "Integration updated successfully.",
@@ -584,3 +590,4 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
 
 
 module.exports = router;
+
