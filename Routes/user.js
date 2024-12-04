@@ -12,6 +12,7 @@ const multer = require('multer');
 const randomstring = require('randomstring')
 const sendMail = require('../config/nodemailer')
 const axios = require('axios')
+const cron = require('node-cron')
 
 
 // create --> user API
@@ -36,7 +37,7 @@ router.post("/create", async (req, res) => {
               _id: company._id, 
               companyName: company.companyName,
               updateDate: company.updateDate,
-              Status: company.Status,
+              status: company.Status,
           },
       });
 
@@ -92,7 +93,7 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
         _id: company._id, 
         companyName: company.companyName,
         updateDate: company.updateDate,
-        Status: company.Status,
+        status: company.status,
       },
     });
 
@@ -360,7 +361,6 @@ router.post("/uploadImage", tokenVerification, upload.single("profileImage"), as
 
 
 // create --> Forgot password and Reset password API
-
 router.post("/forgotPassword", async (req, res) => {
   try {
     const { email } = req.body;
@@ -391,7 +391,7 @@ router.post("/forgotPassword", async (req, res) => {
 
 
 
-
+// create --> reset password API  
 router.post("/resetPassword", async (req, res) => {
   try {
     const { password , token } = req.body;  
@@ -453,7 +453,98 @@ router.post("/testConnection", tokenVerification ,async (req, res) => {
 });
 
 
+router.get("/getIntegration",tokenVerification ,async(req,res)=>{
+ try {
+  const userIdFromToken = req.userIdFromToken;
+  const user = await User.findById(userIdFromToken).select("company");
+  res.send(user.company)
+  console.log("Fetched User:", user);
+ } catch (error) {
+  console.log(error); 
+ }
+})
 
+
+
+// create --> Acuity API
+const fetchData = async (apiKey, userId) => {
+  if (!apiKey || !userId) {
+    console.error("API key or user ID is missing");
+    return;
+  }
+
+  const apiEndpoints = [
+    '/appointments',
+    '/clients',
+    // '/availability/dates',
+    // '/availability/times',
+    '/availability/classes',
+    '/calendars',
+    '/blocks',
+  ];
+
+  try {
+    for (const endpoint of apiEndpoints) {
+      const response = await axios.get(`https://acuityscheduling.com/api/v1${endpoint}`, {
+        auth: {
+          username: userId,
+          password: apiKey,
+        }
+      });
+
+      const newRecord = new Integration({
+        apiName: endpoint,
+        data: response.data,
+        date: new Date(),
+      });
+      await newRecord.save();
+      console.log(`${endpoint} data saved successfully!`);
+    }
+  } catch (error) {
+    console.error("Error during API calls:", error.message);
+  }
+};
+
+
+
+router.post("/integration", tokenVerification, async (req, res) => {
+  const { apiKey, userId } = req.body;
+
+  if (!apiKey || !userId) {
+    return res.status(400).json({ error: "API key and user ID are required" });
+  }
+
+  try {
+    await fetchData(apiKey, userId);
+    res.json({
+      message: "Data fetched and saved successfully",
+    });
+  } catch (error) {
+    console.error("Error during API calls:", error.message);
+    res.status(500).json({ error: "Failed to fetch data from Acuity API..." });
+  }
+});
+
+
+cron.schedule('0 0 * * *', async () => {
+  console.log("Running scheduled task at: ", new Date().toString());
+
+
+  const apiKey = process.env.API_KEY;  
+  const userId = process.env.USER_ID;  
+
+  if (!apiKey || !userId) {
+    console.log("API key or user ID is missing for the scheduled task");
+    return;
+  }
+
+  await fetchData(apiKey, userId);
+});
+
+
+
+ 
+// create --> update integration api
 router.put("/updateIntegration", tokenVerification, async (req, res) => {
   const { username, password } = req.body;
 
@@ -506,5 +597,7 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
 });
 
 
-module.exports = router;
 
+
+
+module.exports = router;

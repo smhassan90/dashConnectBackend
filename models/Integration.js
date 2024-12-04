@@ -1,4 +1,4 @@
-// models/Integration.js
+
 const mongoose = require('mongoose');
 
 const integrationSchema = new mongoose.Schema({
