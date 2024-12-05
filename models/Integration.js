@@ -1,10 +1,9 @@
-
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const integrationSchema = new mongoose.Schema({
-  apiName: { type: String, required: true },
-  data: { type: Object, required: true },
+  apiName: String,
+  data: mongoose.Schema.Types.Mixed,
   date: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model('Integration', integrationSchema);
+module.exports = mongoose.model("Integration", integrationSchema);

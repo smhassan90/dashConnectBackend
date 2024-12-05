@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
 // User Schema
 const userSchema = new mongoose.Schema(
@@ -29,30 +30,17 @@ const userSchema = new mongoose.Schema(
       default: "owner",
     },
     company: {
-      type: {
-        companyName: {
-          type: String,
-        },
-        updateDate: {
-          type: Date,
-          default: Date.now,
-        },
-        status: {
-          type: Number,
-          default: 1,
-        },
-      },
-      required: false, 
+      type: Object, 
+      required: false,
     },
-   token : {
-      type : String,
-      default : "",
+    token: {
+      type: String,
+      default: "",
     },
   },
   {
     timestamps: true,
   }
 );
-
 
 module.exports = mongoose.model("User", userSchema);

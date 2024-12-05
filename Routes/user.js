@@ -13,41 +13,36 @@ const randomstring = require('randomstring')
 const sendMail = require('../config/nodemailer')
 const axios = require('axios')
 const cron = require('node-cron')
+const Integration = require('../models/Integration')
 
 
 // create --> user API
 router.post("/create", async (req, res) => {
   try {
-      const { companyName, updateDate, Status, firstName, lastName, email, password } = req.body;
+    const { companyName,updateDate, Status, firstName, lastName, email, password } = req.body;
 
-      const company = await Company.create({
-          companyName,
-          updateDate,
-          Status,
-      });
+    const company = await Company.create({
+      companyName,
+      updateDate,
+      Status,
+    });
 
-      const hashedPassword = bcrypt.hashSync(password, 10); // Hash the password
+    const hashedPassword = bcrypt.hashSync(password, 10);
 
-      const user = await User.create({
-          firstName,
-          lastName,
-          email,
-          password: hashedPassword, // Store the hashed password
-          company: {  
-              _id: company._id, 
-              companyName: company.companyName,
-              updateDate: company.updateDate,
-              status: company.Status,
-          },
-      });
+    const user = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      company: company,  
+    });
 
-      const userWithCompany = await User.findById(user._id);
-
-      res.status(201).json({ user: userWithCompany });
+    res.status(201).json({ user });
   } catch (error) {
-      res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
+
 
 
 
@@ -68,7 +63,7 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
     // Extract company data
     const company = user.company;
 
-    // Input validation
+   
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ message: "All fields are required." });
     }
@@ -113,7 +108,7 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user) {
-      const checkPassword = bcrypt.compareSync(password, user.password); // Compare plaintext with hashed
+      const checkPassword = bcrypt.compareSync(password, user.password); 
 
       if (checkPassword) {
         const token = jwt.sign(
@@ -149,22 +144,21 @@ router.post("/login", async (req, res) => {
 // create --> Update Employee API
 router.put("/updateEmployee", tokenVerification, async (req, res) => {
   try {
-      const { employeeId, firstName, lastName, email, password, role } = req.body; // Get employeeId from the request body
+      const { employeeId, firstName, lastName, email, password, role } = req.body; 
 
       // Validate the employee ID
       if (!mongoose.isValidObjectId(employeeId)) {
           return res.status(400).send({ status: 400, message: "Invalid employee ID" });
       }
 
-      // Fetch the logged-in user's company details
-      const userIdFromToken = req.userIdFromToken; // Get user ID from token
+      const userIdFromToken = req.userIdFromToken; // Get user id from token
       const user = await User.findById(userIdFromToken).select('company');
 
       if (!user) {
           return res.status(404).send({ message: "User not found" });
       }
 
-      // Check if employee belongs to the logged-in user's company
+      // Check employee belongs to the logged-in user's company
       const employee = await User.findById(employeeId);
       if (!employee || employee.company._id.toString() !== user.company._id.toString()) {
           return res.status(403).send({ message: "You are not authorized to update this employee." });
@@ -177,7 +171,7 @@ router.put("/updateEmployee", tokenVerification, async (req, res) => {
               firstName,
               lastName,
               email,
-              password: password ? bcrypt.hashSync(password, 10) : employee.password, // Hash password only if it's provided
+              password: password ? bcrypt.hashSync(password, 10) : employee.password, 
               role,
           },
           { new: true, runValidators: true } // Return the updated document and run validators
@@ -199,22 +193,19 @@ router.put("/updateEmployee", tokenVerification, async (req, res) => {
 // create --> Delete Employee API
 router.delete("/deleteEmployee", tokenVerification, async (req, res) => {
   try {
-      const { employeeId } = req.body; // Get employeeId from the request body
+      const { employeeId } = req.body; 
 
-      // Validate the employee ID
       if (!mongoose.isValidObjectId(employeeId)) {
           return res.status(400).send({ status: 400, message: "Invalid employee ID" });
       }
 
-      // Fetch the logged-in user's company details
-      const userIdFromToken = req.userIdFromToken; // Get user ID from token
+      const userIdFromToken = req.userIdFromToken; 
       const user = await User.findById(userIdFromToken).select('company');
 
       if (!user) {
           return res.status(404).send({ message: "User not found" });
       }
 
-      // Check if employee belongs to the logged-in user's company
       const employee = await User.findById(employeeId);
       if (!employee || employee.company._id.toString() !== user.company._id.toString()) {
           return res.status(403).send({ message: "You are not authorized to delete this employee." });
@@ -238,7 +229,7 @@ router.delete("/deleteEmployee", tokenVerification, async (req, res) => {
 //  create --> Nuke Users API. It will delete all users from users collection
 router.delete("/nukeUsers", async (req, res) => {
   try {
-    await User.deleteMany({}); // This command delete all users
+    await User.deleteMany({}); 
 
     res.status(200).json({ message: "All users have been deleted." });
   } catch (error) {
@@ -251,7 +242,7 @@ router.delete("/nukeUsers", async (req, res) => {
 // create --> Nuke Companies API. It will delete all companies from companies collection
 router.delete("/nukeCompanies", async (req, res) => {
   try {
-    await Company.deleteMany({}); // This command delete all companies
+    await Company.deleteMany({}); 
 
     res.status(200).json({ message: "All companies have been deleted." });
   } catch (error) {
@@ -264,21 +255,20 @@ router.delete("/nukeCompanies", async (req, res) => {
 // create --> API for fetch all users in the same company
 router.get("/selectAllUsers", tokenVerification, async (req, res) => {
   try {
-    // Retrieve user ID from token
     const userIdFromToken = req.userIdFromToken;
 
-    // Find the user and get their company ID
+    // Find the user 
     const user = await User.findById(userIdFromToken);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
 
+   // and get their company ID
     const companyId = user.company._id;
 
-    // Find all users associated with the same company ID
+    // Find all users in the same company ID
     const usersInCompany = await User.find({ "company._id": companyId });
 
-    // Return the list of users in the same company
     res.status(200).json({ users: usersInCompany });
   } catch (error) {
     console.error("Error fetching users in company:", error);
@@ -467,41 +457,47 @@ router.get("/getIntegration",tokenVerification ,async(req,res)=>{
 
 
 // create --> Acuity API
-const fetchData = async (apiKey, userId) => {
+const fetchData = async (userId,apiKey,companyName) => {
   if (!apiKey || !userId) {
-    console.error("API key or user ID is missing");
+    console.log(`Skipping company '${companyName}' due to missing integration details.`);
     return;
   }
 
   const apiEndpoints = [
-    '/appointments',
-    '/clients',
-    // '/availability/dates',
-    // '/availability/times',
-    '/availability/classes',
-    '/calendars',
-    '/blocks',
+    "/appointments",
+    "/clients",
+    "/availability/classes",
+    "/calendars",
+    "/blocks",
   ];
 
   try {
     for (const endpoint of apiEndpoints) {
+      console.log(`Fetching data for endpoint '${endpoint}' for company '${companyName}'...`);
       const response = await axios.get(`https://acuityscheduling.com/api/v1${endpoint}`, {
         auth: {
           username: userId,
           password: apiKey,
-        }
+        },
       });
 
-      const newRecord = new Integration({
-        apiName: endpoint,
-        data: response.data,
-        date: new Date(),
-      });
-      await newRecord.save();
-      console.log(`${endpoint} data saved successfully!`);
+      console.log(`Data received for '${endpoint}' from company '${companyName}':`, response.data);
+
+      try {
+        const newRecord = new Integration({
+          companyName,
+          apiName: endpoint,
+          data: response.data,
+          date: new Date(),
+        });
+        await newRecord.save();
+        console.log(`Data from '${endpoint}' for company '${companyName}' saved successfully!`);
+      } catch (saveError) {
+        console.error(`Failed to save data for endpoint '${endpoint}' of company '${companyName}':`, saveError.message);
+      }
     }
-  } catch (error) {
-    console.error("Error during API calls:", error.message);
+  } catch (apiError) {
+    console.error(`Error during API calls for company '${companyName}':`, apiError.message);
   }
 };
 
@@ -526,19 +522,30 @@ router.post("/integration", tokenVerification, async (req, res) => {
 });
 
 
-cron.schedule('0 0 * * *', async () => {
-  console.log("Running scheduled task at: ", new Date().toString());
+cron.schedule("0 0 * * *", async () => {
+  console.log("Running scheduled task at:", new Date().toString());
 
+  try {
+    
+    const companies = await Company.find();
+    console.log(`Fetched ${companies.length} companies.`);
 
-  const apiKey = process.env.API_KEY;  
-  const userId = process.env.USER_ID;  
+   
+    for (const company of companies) {
+      const { companyName, integration } = company;
+      const { username, password } = integration || {};
 
-  if (!apiKey || !userId) {
-    console.log("API key or user ID is missing for the scheduled task");
-    return;
+      if (!username || !password) {
+        console.log(`Skipping company '${companyName}' due to missing integration details.`);
+        continue;
+      }
+
+      await fetchData(username, password, companyName);
+    }
+    console.log("Scheduled task completed successfully.");
+  } catch (error) {
+    console.error("Error during scheduled task:", error.message);
   }
-
-  await fetchData(apiKey, userId);
 });
 
 
@@ -553,19 +560,20 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
   }
 
   try {
-    // Step 1: Get user from token
+    // Get user with the help of token
     const userIdFromToken = req.userIdFromToken;
     const user = await User.findById(userIdFromToken).select("company");
     console.log("Fetched User:", user);
 
-    // Step 2: Check if user and company exist
+
+    // check conditions here
     if (!user || !user.company || !user.company.companyName) {
       return res.status(404).json({ error: "Company not associated with user." });
     }
 
     const { companyName } = user.company;
 
-    // Step 3: Fetch company by companyName
+    // Fetch company by companyName
     const company = await Company.findOne({ companyName });
     console.log("Fetched Company:", company);
 
@@ -573,17 +581,22 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
       return res.status(404).json({ error: "Company not found." });
     }
 
-    // Step 4: Initialize integration object if it doesn't exist
     if (!company.integration) {
       company.integration = {}; // Initialize integration object if missing
     }
 
-    // Step 5: Update the username and password fields of the integration object
+    // extract username and password from company and set into the username and password
     company.integration.username = username;
     company.integration.password = password;
 
-    // Step 6: Save the updated company document to the database
+    // Save the userId and Apikey
     await company.save();
+    
+    // Update the user document with the new company integration details
+      await User.updateOne(
+        { _id: userIdFromToken },
+        { $set: { "company.integration": company.integration } }
+      );
 
     res.status(200).json({
       message: "Integration updated successfully.",
@@ -595,6 +608,7 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
   }
   
 });
+
 
 
 

@@ -7,6 +7,9 @@ const companySchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  abcd:{
+    type: String
+  },
   updateDate: {
     type: Date,
     default: Date.now,
