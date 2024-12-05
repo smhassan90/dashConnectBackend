@@ -24,7 +24,7 @@ mongoose.connect(url)
     });
 
 
-
+//TOOD: add /v1/
 app.use('/api/user', authRoute);
 
 app.listen(3000, () => {

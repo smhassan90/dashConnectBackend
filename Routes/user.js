@@ -85,7 +85,7 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
       password: hashedPassword,
       role: role || "employee", 
       company: {
-        _id: company._id, 
+        _id: company._id, // only company id send into the database
         companyName: company.companyName,
         updateDate: company.updateDate,
         status: company.status,
@@ -199,6 +199,8 @@ router.delete("/deleteEmployee", tokenVerification, async (req, res) => {
           return res.status(400).send({ status: 400, message: "Invalid employee ID" });
       }
 
+      // add validateion user belong to the same comapny
+
       const userIdFromToken = req.userIdFromToken; 
       const user = await User.findById(userIdFromToken).select('company');
 
@@ -253,7 +255,7 @@ router.delete("/nukeCompanies", async (req, res) => {
 
 
 // create --> API for fetch all users in the same company
-router.get("/selectAllUsers", tokenVerification, async (req, res) => {
+router.get("/getEmployees", tokenVerification, async (req, res) => {
   try {
     const userIdFromToken = req.userIdFromToken;
 
@@ -485,7 +487,7 @@ const fetchData = async (userId,apiKey,companyName) => {
 
       try {
         const newRecord = new Integration({
-          companyName,
+          companyName, // company id
           apiName: endpoint,
           data: response.data,
           date: new Date(),
@@ -552,62 +554,62 @@ cron.schedule("0 0 * * *", async () => {
 
  
 // create --> update integration api
-router.put("/updateIntegration", tokenVerification, async (req, res) => {
-  const { username, password } = req.body;
+// router.put("/updateIntegration", tokenVerification, async (req, res) => {
+//   const { username, password } = req.body;
 
-  if (!username || !password) {
-    return res.status(400).json({ error: "Username and password are required." });
-  }
+//   if (!username || !password) {
+//     return res.status(400).json({ error: "Username and password are required." });
+//   }
 
-  try {
-    // Get user with the help of token
-    const userIdFromToken = req.userIdFromToken;
-    const user = await User.findById(userIdFromToken).select("company");
-    console.log("Fetched User:", user);
+//   try {
+//     // Get user with the help of token
+//     const userIdFromToken = req.userIdFromToken;
+//     const user = await User.findById(userIdFromToken).select("company");
+//     console.log("Fetched User:", user);
 
 
-    // check conditions here
-    if (!user || !user.company || !user.company.companyName) {
-      return res.status(404).json({ error: "Company not associated with user." });
-    }
+//     // check conditions here
+//     if (!user || !user.company || !user.company.companyName) {
+//       return res.status(404).json({ error: "Company not associated with user." });
+//     }
 
-    const { companyName } = user.company;
+//     const { companyName } = user.company;
 
-    // Fetch company by companyName
-    const company = await Company.findOne({ companyName });
-    console.log("Fetched Company:", company);
+//     // Fetch company by companyName
+//     const company = await Company.findOne({ companyName });
+//     console.log("Fetched Company:", company);
 
-    if (!company) {
-      return res.status(404).json({ error: "Company not found." });
-    }
+//     if (!company) {
+//       return res.status(404).json({ error: "Company not found." });
+//     }
 
-    if (!company.integration) {
-      company.integration = {}; // Initialize integration object if missing
-    }
+//     if (!company.integration) {
+//       company.integration = {}; // Initialize integration object if missing
+//     }
 
-    // extract username and password from company and set into the username and password
-    company.integration.username = username;
-    company.integration.password = password;
+//     // extract username and password from company and set into the username and password
+//     company.integration.username = username;
+//     company.integration.password = password;
 
-    // Save the userId and Apikey
-    await company.save();
+//     // Save the userId and Apikey
+//     await company.save();
     
-    // Update the user document with the new company integration details
-      await User.updateOne(
-        { _id: userIdFromToken },
-        { $set: { "company.integration": company.integration } }
-      );
+//     // Update the user document with the new company integration details
+//       await User.updateOne(
+//         { _id: userIdFromToken },
+//         { $set: { "company.integration": company.integration } }
+//       );
 
-    res.status(200).json({
-      message: "Integration updated successfully.",
-      company,
-    });
-  } catch (err) {
-    console.error("Error Occurred:", err.message);
-    res.status(500).json({ error: "Server error.", details: err.message });
-  }
+//     res.status(200).json({
+//       message: "Integration updated successfully.",
+//       company,
+//     });
+//   } catch (err) {
+//     console.error("Error Occurred:", err.message);
+//     res.status(500).json({ error: "Server error.", details: err.message });
+//   }
   
-});
+// });
 
 
 
