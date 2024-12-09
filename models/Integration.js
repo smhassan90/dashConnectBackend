@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
 
 const integrationSchema = new mongoose.Schema({
-  apiName: String,
-  //companyId: 
- // url
+  companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
+  apiName: String, 
   data: mongoose.Schema.Types.Mixed,
   date: { type: Date, default: Date.now },
 });

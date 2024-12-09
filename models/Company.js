@@ -7,9 +7,6 @@ const companySchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  abcd:{
-    type: String
-  },
   updateDate: {
     type: Date,
     default: Date.now,
@@ -18,12 +15,19 @@ const companySchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
-  integrations: [{
-    name: {type: String, default: "Acuity"},
+  integration: {
+    name: {type: String, default: null},
     username: { type: String, default: null }, 
     password: { type: String, default: null }, 
-    //type? //basic? oath1, oath2
-  }],
+  },
 });
 
 module.exports = mongoose.model("Company", companySchema);
+
+
+// integrations: [{
+//   name: {type: String, default: "Acuity"},
+//   username: { type: String, default: null }, 
+//   password: { type: String, default: null }, 
+//   //type? //basic? oath1, oath2
+// }],

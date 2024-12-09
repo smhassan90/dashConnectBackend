@@ -19,8 +19,8 @@ async function sendPasswordResetEmail(email, token) {
       subject: "Reset Your Password", // Subject line
       text: `Token: ${token}\nPlease click the link below to reset your password`, // plain text body
       html: `
-        <h4><strong>Token:</strong> ${token}</h4>
-        <h4><a href='http://localhost:3000/api/user/resetPassword'>Click here to change your password</a></h4>
+        <h2><strong>Token:</strong> ${token}</h2>
+        <h2><a href='http://localhost:3000/api/user/resetPassword'>Click here to change your password</a></h2>
       `, // html body
     });
 

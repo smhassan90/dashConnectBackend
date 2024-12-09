@@ -30,7 +30,8 @@ const userSchema = new mongoose.Schema(
       default: "owner",
     },
     company: {
-      type: Object, 
+      type: mongoose.Schema.Types.ObjectId,
+      ref : 'Company',
       required: false,
     },
     token: {

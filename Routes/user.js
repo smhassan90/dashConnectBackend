@@ -14,6 +14,37 @@ const sendMail = require('../config/nodemailer')
 const axios = require('axios')
 const cron = require('node-cron')
 const Integration = require('../models/Integration')
+const MasterIntegration = require('../models/MasterIntegration')
+const MetaIntegration = require('../models/Meta_Integration')
+
+
+
+router.post('/metaIntegration', async (req, res) => {
+  try {
+    const { integration_id, apiName, apiStructure } = req.body;
+
+    const apiStructureString = typeof apiStructure === 'string'? apiStructure: JSON.stringify(apiStructure);
+    const newMeta = new MetaIntegration({
+      integration_id,
+      apiName,
+      apiStructure: apiStructureString,
+    });
+
+    await newMeta.save();
+    res.status(201).send('MetaIntegration saved successfully!');
+  } catch (error) {
+    res.status(500).send('Server Error: ' + error.message);
+  }
+});
+
+
+
+router.post('/masterIntegration', async (req, res) => {
+  const { name } = req.body
+  const newIntegration = new MasterIntegration({ masterintegration: { name } });
+  await newIntegration.save();
+  res.status(201).json({ message: 'Created successfully', data: newIntegration });
+});
 
 
 // create --> user API
@@ -459,7 +490,7 @@ router.get("/getIntegration",tokenVerification ,async(req,res)=>{
 
 
 // create --> Acuity API
-const fetchData = async (userId,apiKey,companyName) => {
+const fetchData = async (userId, apiKey, companyName) => {
   if (!apiKey || !userId) {
     console.log(`Skipping company '${companyName}' due to missing integration details.`);
     return;
@@ -474,6 +505,13 @@ const fetchData = async (userId,apiKey,companyName) => {
   ];
 
   try {
+    const company = await Company.findOne({ companyName }); 
+  
+    if (!company) {
+      console.log(`Company with name '${companyName}' not found.`);
+      return;
+    }
+
     for (const endpoint of apiEndpoints) {
       console.log(`Fetching data for endpoint '${endpoint}' for company '${companyName}'...`);
       const response = await axios.get(`https://acuityscheduling.com/api/v1${endpoint}`, {
@@ -487,7 +525,7 @@ const fetchData = async (userId,apiKey,companyName) => {
 
       try {
         const newRecord = new Integration({
-          companyName, // company id
+          companyId: company._id,  
           apiName: endpoint,
           data: response.data,
           date: new Date(),
@@ -505,28 +543,11 @@ const fetchData = async (userId,apiKey,companyName) => {
 
 
 
-router.post("/integration", tokenVerification, async (req, res) => {
-  const { apiKey, userId } = req.body;
-
-  if (!apiKey || !userId) {
-    return res.status(400).json({ error: "API key and user ID are required" });
-  }
-
-  try {
-    await fetchData(apiKey, userId);
-    res.json({
-      message: "Data fetched and saved successfully",
-    });
-  } catch (error) {
-    console.error("Error during API calls:", error.message);
-    res.status(500).json({ error: "Failed to fetch data from Acuity API..." });
-  }
-});
 
 
 cron.schedule("0 0 * * *", async () => {
   console.log("Running scheduled task at:", new Date().toString());
-
+  
   try {
     
     const companies = await Company.find();
@@ -536,14 +557,15 @@ cron.schedule("0 0 * * *", async () => {
     for (const company of companies) {
       const { companyName, integration } = company;
       const { username, password } = integration || {};
-
+    
       if (!username || !password) {
         console.log(`Skipping company '${companyName}' due to missing integration details.`);
-        continue;
+        continue;  
       }
-
-      await fetchData(username, password, companyName);
+    
+      await fetchData(username, password, companyName); 
     }
+    
     console.log("Scheduled task completed successfully.");
   } catch (error) {
     console.error("Error during scheduled task:", error.message);
@@ -552,68 +574,81 @@ cron.schedule("0 0 * * *", async () => {
 
 
 
- 
-// create --> update integration api
-// router.put("/updateIntegration", tokenVerification, async (req, res) => {
-//   const { username, password } = req.body;
 
-//   if (!username || !password) {
-//     return res.status(400).json({ error: "Username and password are required." });
+// create --> update integration api
+router.put("/updateIntegration", tokenVerification, async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password are required." });
+  }
+  
+  try {
+    // Get user with the help of token
+    const userIdFromToken = req.userIdFromToken;
+    const user = await User.findById(userIdFromToken).select("company");
+    console.log("Fetched User:", user);
+    
+
+    // check conditions here
+    if (!user || !user.company || !user.company.companyName) {
+      return res.status(404).json({ error: "Company not associated with user." });
+    }
+    
+    const { companyName } = user.company;
+    
+    // Fetch company by companyName
+    const company = await Company.findOne({ companyName });
+    console.log("Fetched Company:", company);
+    
+    if (!company) {
+      return res.status(404).json({ error: "Company not found." });
+    }
+    
+    if (!company.integration) {
+      company.integration = {}; // Initialize integration object if missing
+    }
+    
+    // extract username and password from company and set into the username and password
+    company.integration.username = username;
+    company.integration.password = password;
+
+    // Save the userId and Apikey
+    await company.save();
+    
+
+      res.status(200).json({
+      message: "Integration updated successfully.",
+      company,
+    });
+  } catch (err) {
+    console.error("Error Occurred:", err.message);
+    res.status(500).json({ error: "Server error.", details: err.message });
+  }
+  
+});
+
+
+
+
+
+
+// router.post("/integration", tokenVerification, async (req, res) => {
+//   const { apiKey, userId } = req.body;
+
+//   if (!apiKey || !userId) {
+//     return res.status(400).json({ error: "API key and user ID are required" });
 //   }
 
 //   try {
-//     // Get user with the help of token
-//     const userIdFromToken = req.userIdFromToken;
-//     const user = await User.findById(userIdFromToken).select("company");
-//     console.log("Fetched User:", user);
-
-
-//     // check conditions here
-//     if (!user || !user.company || !user.company.companyName) {
-//       return res.status(404).json({ error: "Company not associated with user." });
-//     }
-
-//     const { companyName } = user.company;
-
-//     // Fetch company by companyName
-//     const company = await Company.findOne({ companyName });
-//     console.log("Fetched Company:", company);
-
-//     if (!company) {
-//       return res.status(404).json({ error: "Company not found." });
-//     }
-
-//     if (!company.integration) {
-//       company.integration = {}; // Initialize integration object if missing
-//     }
-
-//     // extract username and password from company and set into the username and password
-//     company.integration.username = username;
-//     company.integration.password = password;
-
-//     // Save the userId and Apikey
-//     await company.save();
-    
-//     // Update the user document with the new company integration details
-//       await User.updateOne(
-//         { _id: userIdFromToken },
-//         { $set: { "company.integration": company.integration } }
-//       );
-
-//     res.status(200).json({
-//       message: "Integration updated successfully.",
-//       company,
+//     await fetchData(apiKey, userId);
+//     res.json({
+//       message: "Data fetched and saved successfully",
 //     });
-//   } catch (err) {
-//     console.error("Error Occurred:", err.message);
-//     res.status(500).json({ error: "Server error.", details: err.message });
+//   } catch (error) {
+//     console.error("Error during API calls:", error.message);
+//     res.status(500).json({ error: "Failed to fetch data from Acuity API..." });
 //   }
-  
 // });
-
-
-
-
-
 
 module.exports = router;
