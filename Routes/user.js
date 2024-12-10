@@ -496,16 +496,20 @@ const fetchData = async (userId, apiKey, companyName) => {
     return;
   }
 
-  const apiEndpoints = [
-    "/appointments",
-    "/clients",
-    "/availability/classes",
-    "/calendars",
-    "/blocks",
-  ];
+  // const apiEndpoints = [
+  //   "/appointments",
+  //   "/clients",
+  //   "/availability/classes",
+  //   "/calendars",
+  //   "/blocks",
+  // ];  // ye end points db se ayegy yaha meta_integrations se
 
   try {
-    const company = await Company.findOne({ companyName }); 
+    const company = await Company.findOne({ companyName });
+    const metaIntegrations = await MetaIntegration.find({})
+    const apiEndpoints = metaIntegrations.map((integration)=> integration.apiName)
+    console.log("Endpoints of api-->", apiEndpoints);
+    
   
     if (!company) {
       console.log(`Company with name '${companyName}' not found.`);
