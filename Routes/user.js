@@ -506,7 +506,7 @@ const fetchData = async (userId, apiKey, companyName) => {
 
   try {
     const company = await Company.findOne({ companyName });
-    
+
     // fetching apinames dynamically from metaintegration stored in db
     const metaIntegrations = await MetaIntegration.find({})
     const apiEndpoints = metaIntegrations.map((integration)=> integration.apiName)
@@ -545,7 +545,6 @@ const fetchData = async (userId, apiKey, companyName) => {
     console.error(`Error during API calls for company '${companyName}':`, apiError.message);
   }
 };
-
 
 
 
@@ -636,8 +635,6 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
 
 
 
-
-
 // router.post("/integration", tokenVerification, async (req, res) => {
 //   const { apiKey, userId } = req.body;
 
@@ -655,5 +652,104 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
 //     res.status(500).json({ error: "Failed to fetch data from Acuity API..." });
 //   }
 // });
+
+
+
+// create -> append question API
+router.post("/appendQuestion", tokenVerification,async (req, res) => {
+  const { question } = req.body;
+
+  // empty validation
+  if (!question || typeof question !== "string") {
+    return res.status(400).json({ error: "Invalid or missing question string." });
+  }
+
+  try {
+    const metaIntegrations = await MetaIntegration.find({});
+
+    let combinedString = question; 
+    metaIntegrations.forEach((integration) => {
+      combinedString += `\nAPI Name: ${integration.apiName}\nAPI Structure: ${integration.apiStructure}\n`;
+    });
+
+    console.log("Combined String:\n", combinedString);
+
+    res.status(200).json({ message: "String appended successfully", combinedString });
+  } catch (error) {
+    console.error("Error while appending question:", error.message);
+    res.status(500).json({ error: "An error occurred while processing your request." });
+  }
+});
+
+
+
+
+
+// API route to handle dynamic requests based on frontend message
+// router.post('/handleRequest', async (req, res) => {
+//   const { userQuestion } = req.body; // Get user question from the request body
+
+//   if (!userQuestion || !userQuestion.toLowerCase().includes("summary of appointments")) {
+//     return res.status(400).json({ message: 'Invalid question format' });
+//   }
+
+//   try {
+//     // Fetch all appointment data from MetaIntegration
+//     const appointmentsData = await MetaIntegration.find({ apiName: '/appointments' });
+
+//     if (appointmentsData.length === 0) {
+//       return res.status(404).json({ message: "No appointment data found" });
+//     }
+
+//     // Initialize the result structure
+//     const result = {
+//       labels: [],
+//       totalAppointments: [],
+//       totalPaidAppointments: [],
+//       totalRevenue: [],
+//     };
+
+//     // Process each appointment data
+//     appointmentsData.forEach((appointmentData) => {
+//       const { apiStructure } = appointmentData;
+//       const date = apiStructure.date;
+
+//       // Check if date exists and is a valid string
+//       if (date && typeof date === 'string') {
+//         const appointmentDate = date.split(' ')[0]; // Extract date (format: YYYY-MM-DD)
+
+//         // Check if the date already exists in the result
+//         if (!result.labels.includes(appointmentDate)) {
+//           result.labels.push(appointmentDate);
+//           result.totalAppointments.push(0);
+//           result.totalPaidAppointments.push(0);
+//           result.totalRevenue.push(0);
+//         }
+
+//         // Find the index of the current date in labels
+//         const index = result.labels.indexOf(appointmentDate);
+
+//         // Increment total appointments
+//         result.totalAppointments[index]++;
+
+//         // Increment paid appointments and total revenue if appointment is paid
+//         if (apiStructure.paid === 'yes') {
+//           result.totalPaidAppointments[index]++;
+//           result.totalRevenue[index] += parseFloat(apiStructure.price);
+//         }
+//       }
+//     });
+
+//     // Send the result as JSON response
+//     return res.status(200).json(result);
+
+//   } catch (error) {
+//     console.error('Error fetching appointment summary:', error.message);
+//     return res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
+
+
+
 
 module.exports = router;
