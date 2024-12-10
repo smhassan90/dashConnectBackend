@@ -506,10 +506,11 @@ const fetchData = async (userId, apiKey, companyName) => {
 
   try {
     const company = await Company.findOne({ companyName });
+    
+    // fetching apinames dynamically from metaintegration stored in db
     const metaIntegrations = await MetaIntegration.find({})
     const apiEndpoints = metaIntegrations.map((integration)=> integration.apiName)
     console.log("Endpoints of api-->", apiEndpoints);
-    
   
     if (!company) {
       console.log(`Company with name '${companyName}' not found.`);
