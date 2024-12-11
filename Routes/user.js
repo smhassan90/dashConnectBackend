@@ -686,68 +686,73 @@ router.post("/appendQuestion", tokenVerification,async (req, res) => {
 
 
 // API route to handle dynamic requests based on frontend message
-// router.post('/handleRequest', async (req, res) => {
-//   const { userQuestion } = req.body; // Get user question from the request body
+router.post('/handleRequest', async (req, res) => {
+  const { userQuestion } = req.body; // Get user question from the request body
 
-//   if (!userQuestion || !userQuestion.toLowerCase().includes("summary of appointments")) {
-//     return res.status(400).json({ message: 'Invalid question format' });
-//   }
+  // Validate the user question
+  if (!userQuestion || !userQuestion.toLowerCase().includes("summary of appointments")) {
+    return res.status(400).json({ message: 'Invalid question format' });
+  }
 
-//   try {
-//     // Fetch all appointment data from MetaIntegration
-//     const appointmentsData = await MetaIntegration.find({ apiName: '/appointments' });
+  try {
+    // Fetch only data related to '/appointments' from Integration collection
+    const appointmentsData = await Integration.find({ apiName: '/appointments' });
 
-//     if (appointmentsData.length === 0) {
-//       return res.status(404).json({ message: "No appointment data found" });
-//     }
+    if (appointmentsData.length === 0) {
+      return res.status(404).json({ message: "No appointment data found" });
+    }
 
-//     // Initialize the result structure
-//     const result = {
-//       labels: [],
-//       totalAppointments: [],
-//       totalPaidAppointments: [],
-//       totalRevenue: [],
-//     };
+    // Initialize the result structure
+    const result = {
+      labels: [], // Dates
+      totalAppointments: [], // Count of total appointments per day
+      totalPaidAppointments: [], // Count of paid appointments per day
+      totalRevenue: [], // Sum of revenue per day
+    };
 
-//     // Process each appointment data
-//     appointmentsData.forEach((appointmentData) => {
-//       const { apiStructure } = appointmentData;
-//       const date = apiStructure.date;
+    // Process each item in the appointmentsData array
+    appointmentsData.forEach((appointmentData) => {
+      const { data } = appointmentData; // Assuming 'data' is an array
 
-//       // Check if date exists and is a valid string
-//       if (date && typeof date === 'string') {
-//         const appointmentDate = date.split(' ')[0]; // Extract date (format: YYYY-MM-DD)
+      data.forEach((item) => {
+        const date = item.date;
 
-//         // Check if the date already exists in the result
-//         if (!result.labels.includes(appointmentDate)) {
-//           result.labels.push(appointmentDate);
-//           result.totalAppointments.push(0);
-//           result.totalPaidAppointments.push(0);
-//           result.totalRevenue.push(0);
-//         }
+        // Check if the date exists and is a valid string
+        if (date && typeof date === 'string') {
+          const appointmentDate = date.split(' ')[0]; // Extract date in YYYY-MM-DD format
 
-//         // Find the index of the current date in labels
-//         const index = result.labels.indexOf(appointmentDate);
+          // Check if the date already exists in the result
+          if (!result.labels.includes(appointmentDate)) {
+            result.labels.push(appointmentDate);
+            result.totalAppointments.push(0);
+            result.totalPaidAppointments.push(0);
+            result.totalRevenue.push(0);
+          }
 
-//         // Increment total appointments
-//         result.totalAppointments[index]++;
+          // Find the index of the current date in labels
+          const index = result.labels.indexOf(appointmentDate);
 
-//         // Increment paid appointments and total revenue if appointment is paid
-//         if (apiStructure.paid === 'yes') {
-//           result.totalPaidAppointments[index]++;
-//           result.totalRevenue[index] += parseFloat(apiStructure.price);
-//         }
-//       }
-//     });
+          // Increment total appointments
+          result.totalAppointments[index]++;
 
-//     // Send the result as JSON response
-//     return res.status(200).json(result);
+          // Increment paid appointments and total revenue if the appointment is paid
+          if (item.paid === 'yes') {
+            result.totalPaidAppointments[index]++;
+            result.totalRevenue[index] += parseFloat(item.price || 0); // Ensure price is parsed as a number
+          }
+        }
+      });
+    });
 
-//   } catch (error) {
-//     console.error('Error fetching appointment summary:', error.message);
-//     return res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
+    // Send the result as a JSON response
+    return res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Error fetching appointment summary:', error.message);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 
 
 
