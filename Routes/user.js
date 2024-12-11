@@ -46,6 +46,7 @@ router.post('/masterIntegration', async (req, res) => {
   res.status(201).json({ message: 'Created successfully', data: newIntegration });
 });
 
+// --------------------------------       ------------------------------------- //
 
 // create --> user API
 router.post("/create", async (req, res) => {
@@ -73,6 +74,7 @@ router.post("/create", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 
 
 
@@ -132,7 +134,6 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
  
 
 
- 
 
 
 // create --> Login API
@@ -172,6 +173,8 @@ router.post("/login", async (req, res) => {
     res.status(500).send({ status: 500, error: "Internal Server Error" });
   }
 });
+
+
 
 
 
@@ -224,6 +227,8 @@ router.put("/updateEmployee", tokenVerification, async (req, res) => {
 
 
 
+
+ 
 // create --> Delete Employee API
 router.delete("/deleteEmployee", tokenVerification, async (req, res) => {
   try {
@@ -394,7 +399,7 @@ router.post("/forgotPassword", async (req, res) => {
     const user = await User.findOne({ email: email });
 
     if (user) {
-      const token = randomstring.generate();
+      const token = randomstring.generate(6);
 
       const updateData = await User.updateOne(
         { _id: user._id },
