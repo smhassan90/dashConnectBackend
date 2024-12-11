@@ -132,6 +132,9 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
  
 
 
+ 
+
+
 // create --> Login API
 router.post("/login", async (req, res) => {
   try {
@@ -634,7 +637,7 @@ const fetchData = async (userId, apiKey, companyName) => {
 
 
 
-cron.schedule("* * * * *", async () => {
+cron.schedule("0 0 * * *", async () => {
   console.log("Running scheduled task at:", new Date().toString());
 
   try {

@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
 
-// User Schema
+
 const userSchema = new mongoose.Schema(
   {
     firstName: {
@@ -29,7 +28,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "owner",
     },
-    company: Object,
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref : 'Company',
+      required: false,
+    },
     token: {
       type: String,
       default: "",
