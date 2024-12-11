@@ -16,9 +16,10 @@ const companySchema = new mongoose.Schema({
     default: 1,
   },
   integration: {
-    name: {type: String, default: null},
+    name: {type: String, default: "Acuity"},
     username: { type: String, default: null }, 
     password: { type: String, default: null }, 
+    
   },
 });
 

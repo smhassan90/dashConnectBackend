@@ -29,11 +29,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "owner",
     },
-    company: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref : 'Company',
-      required: false,
-    },
+    company: Object,
     token: {
       type: String,
       default: "",

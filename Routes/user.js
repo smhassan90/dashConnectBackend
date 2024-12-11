@@ -490,28 +490,94 @@ router.get("/getIntegration",tokenVerification ,async(req,res)=>{
 
 
 // create --> Acuity API
+// const fetchData = async (userId, apiKey, companyName) => {
+//   if (!apiKey || !userId) {
+//     console.log(`Skipping company '${companyName}' due to missing integration details.`);
+//     return;
+//   }
+
+//   try {
+//     const company = await Company.findOne({ companyName });
+
+//     // fetching apinames dynamically from metaintegration stored in db
+//     const metaIntegrations = await MetaIntegration.find({})
+//     const apiEndpoints = metaIntegrations.map((integration)=> integration.apiName)
+//     console.log("Endpoints of api-->", apiEndpoints);
+  
+//     if (!company) {
+//       console.log(`Company with name '${companyName}' not found.`);
+//       return;
+//     }
+
+//     for (const endpoint of apiEndpoints) {
+//       console.log(`Fetching data for endpoint '${endpoint}' for company '${companyName}'...`);
+//       const response = await axios.get(`https://acuityscheduling.com/api/v1${endpoint}`, {
+//         auth: {
+//           username: userId,
+//           password: apiKey,
+//         },
+//       });
+
+//       console.log(`Data received for '${endpoint}' from company '${companyName}':`, response.data);
+
+//       try {
+//         const newRecord = new Integration({
+//           companyId: company._id,  
+//           apiName: endpoint,
+//           data: response.data,
+//           date: new Date(),
+//         });
+//         await newRecord.save();
+//         console.log(`Data from '${endpoint}' for company '${companyName}' saved successfully!`);
+//       } catch (saveError) {
+//         console.error(`Failed to save data for endpoint '${endpoint}' of company '${companyName}':`, saveError.message);
+//       }
+//     }
+//   } catch (apiError) {
+//     console.error(`Error during API calls for company '${companyName}':`, apiError.message);
+//   }
+// };
+// cron.schedule("0 0 * * *", async () => {
+//   console.log("Running scheduled task at:", new Date().toString());
+  
+//   try {
+    
+//     const companies = await Company.find();
+//     console.log(`Fetched ${companies.length} companies.`);
+
+   
+//     for (const company of companies) {
+//       const { companyName, integration } = company;
+//       const { username, password } = integration || {};
+    
+//       if (!username || !password) {
+//         console.log(`Skipping company '${companyName}' due to missing integration details.`);
+//         continue;  
+//       }
+    
+//       await fetchData(username, password, companyName); 
+//     }
+    
+//     console.log("Scheduled task completed successfully.");
+//   } catch (error) {
+//     console.error("Error during scheduled task:", error.message);
+//   }
+// });
+
+
+
 const fetchData = async (userId, apiKey, companyName) => {
   if (!apiKey || !userId) {
     console.log(`Skipping company '${companyName}' due to missing integration details.`);
     return;
   }
 
-  // const apiEndpoints = [
-  //   "/appointments",
-  //   "/clients",
-  //   "/availability/classes",
-  //   "/calendars",
-  //   "/blocks",
-  // ];  // ye end points db se ayegy yaha meta_integrations se
-
   try {
     const company = await Company.findOne({ companyName });
-
-    // fetching apinames dynamically from metaintegration stored in db
-    const metaIntegrations = await MetaIntegration.find({})
-    const apiEndpoints = metaIntegrations.map((integration)=> integration.apiName)
+    const metaIntegrations = await MetaIntegration.find({});
+    const apiEndpoints = metaIntegrations.map((integration) => integration.apiName);
     console.log("Endpoints of api-->", apiEndpoints);
-  
+
     if (!company) {
       console.log(`Company with name '${companyName}' not found.`);
       return;
@@ -519,6 +585,15 @@ const fetchData = async (userId, apiKey, companyName) => {
 
     for (const endpoint of apiEndpoints) {
       console.log(`Fetching data for endpoint '${endpoint}' for company '${companyName}'...`);
+
+      // Check the last sync time for the company and endpoint
+      const lastSync = await Integration.findOne({
+        companyId: company._id,
+        apiName: endpoint,
+      }).sort({ lastSyncTime: -1 });
+
+      const lastSyncTime = lastSync ? lastSync.lastSyncTime : null; // If no sync, consider it as null
+
       const response = await axios.get(`https://acuityscheduling.com/api/v1${endpoint}`, {
         auth: {
           username: userId,
@@ -528,12 +603,23 @@ const fetchData = async (userId, apiKey, companyName) => {
 
       console.log(`Data received for '${endpoint}' from company '${companyName}':`, response.data);
 
+      // Compare last sync time with the data received and only save if there's new or updated data
+      const updatedData = response.data.filter((data) => {
+        return !lastSyncTime || new Date(data.updatedAt) > new Date(lastSyncTime);
+      });
+
+      // If there is updated data, save it; if not, save an empty array with a "no updated data" message
+      const dataToSave = updatedData.length > 0 ? updatedData : [];
+      const message = updatedData.length > 0 ? '' : 'No updated data fetch';
+
       try {
         const newRecord = new Integration({
-          companyId: company._id,  
+          companyId: company._id,
           apiName: endpoint,
-          data: response.data,
+          data: dataToSave,
           date: new Date(),
+          lastSyncTime: new Date(), // Update last sync time after saving
+          message: message,  // Save message when no data is updated
         });
         await newRecord.save();
         console.log(`Data from '${endpoint}' for company '${companyName}' saved successfully!`);
@@ -548,33 +634,33 @@ const fetchData = async (userId, apiKey, companyName) => {
 
 
 
-
-cron.schedule("0 0 * * *", async () => {
+cron.schedule("* * * * *", async () => {
   console.log("Running scheduled task at:", new Date().toString());
-  
+
   try {
-    
     const companies = await Company.find();
     console.log(`Fetched ${companies.length} companies.`);
 
-   
     for (const company of companies) {
       const { companyName, integration } = company;
       const { username, password } = integration || {};
-    
+
       if (!username || !password) {
         console.log(`Skipping company '${companyName}' due to missing integration details.`);
-        continue;  
+        continue;
       }
-    
-      await fetchData(username, password, companyName); 
+
+      await fetchData(username, password, companyName);
     }
-    
+
     console.log("Scheduled task completed successfully.");
   } catch (error) {
     console.error("Error during scheduled task:", error.message);
   }
 });
+
+ 
+
 
 
 
@@ -680,7 +766,6 @@ router.post("/appendQuestion", tokenVerification,async (req, res) => {
     res.status(500).json({ error: "An error occurred while processing your request." });
   }
 });
-
 
 
 
