@@ -650,6 +650,49 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
 
 
 
+// create --> disconect integration api
+router.put("/disconnectIntegration", tokenVerification, async (req, res) => {
+  try {
+    // Get user ID from token
+    const userIdFromToken = req.userIdFromToken;
+
+    // Fetch user to get the associated company ID
+    const user = await User.findById(userIdFromToken).select("company");
+    if (!user || !user.company) {
+      return res.status(404).json({ error: "User or associated company not found." });
+    }
+
+    const companyId = user.company; // Directly using companyId
+
+    
+    const company = await Company.findById(companyId);
+    if (!company) {
+      return res.status(404).json({ error: "Company not found." });
+    }
+
+    // Nullify only username and password from integrtion object
+    if (company.integration) {
+      company.integration.username = null;
+      company.integration.password = null;
+    } else {
+      return res.status(400).json({ error: "Integration data not found for the company." });
+    }
+
+    await company.save();
+
+    res.status(200).json({
+      message: "Integration username and password nullified successfully.",
+    });
+  } catch (err) {
+    console.error("Error Occurred:", err.message);
+    res.status(500).json({ error: "Server error.", details: err.message });
+  }
+});
+
+
+
+
+
 
 // router.post("/integration", tokenVerification, async (req, res) => {
 //   const { apiKey, userId } = req.body;
