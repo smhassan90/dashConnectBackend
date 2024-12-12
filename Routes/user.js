@@ -293,29 +293,32 @@ router.delete("/nukeCompanies", async (req, res) => {
 
 
 
+
+
 // create --> API for fetch all users in the same company
 router.get("/getEmployees", tokenVerification, async (req, res) => {
   try {
     const userIdFromToken = req.userIdFromToken;
 
-    // Find the user 
+    // Find the user to get their company ID
     const user = await User.findById(userIdFromToken);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
 
-   // and get their company ID
-    const companyId = user.company._id;
+    const companyId = user.company; // Directly using the companyId from user
 
-    // Find all users in the same company ID
-    const usersInCompany = await User.find({ "company._id": companyId });
+    // Find all employees belonging to the same company ID
+    const employees = await User.find({ company: companyId });
 
-    res.status(200).json({ users: usersInCompany });
+    res.status(200).json({ employees });
   } catch (error) {
-    console.error("Error fetching users in company:", error);
+    console.error("Error fetching employees:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+
 
 
 
@@ -498,82 +501,6 @@ router.get("/getIntegration",tokenVerification ,async(req,res)=>{
 
 
 // create --> Acuity API
-// const fetchData = async (userId, apiKey, companyName) => {
-//   if (!apiKey || !userId) {
-//     console.log(`Skipping company '${companyName}' due to missing integration details.`);
-//     return;
-//   }
-
-//   try {
-//     const company = await Company.findOne({ companyName });
-
-//     // fetching apinames dynamically from metaintegration stored in db
-//     const metaIntegrations = await MetaIntegration.find({})
-//     const apiEndpoints = metaIntegrations.map((integration)=> integration.apiName)
-//     console.log("Endpoints of api-->", apiEndpoints);
-  
-//     if (!company) {
-//       console.log(`Company with name '${companyName}' not found.`);
-//       return;
-//     }
-
-//     for (const endpoint of apiEndpoints) {
-//       console.log(`Fetching data for endpoint '${endpoint}' for company '${companyName}'...`);
-//       const response = await axios.get(`https://acuityscheduling.com/api/v1${endpoint}`, {
-//         auth: {
-//           username: userId,
-//           password: apiKey,
-//         },
-//       });
-
-//       console.log(`Data received for '${endpoint}' from company '${companyName}':`, response.data);
-
-//       try {
-//         const newRecord = new Integration({
-//           companyId: company._id,  
-//           apiName: endpoint,
-//           data: response.data,
-//           date: new Date(),
-//         });
-//         await newRecord.save();
-//         console.log(`Data from '${endpoint}' for company '${companyName}' saved successfully!`);
-//       } catch (saveError) {
-//         console.error(`Failed to save data for endpoint '${endpoint}' of company '${companyName}':`, saveError.message);
-//       }
-//     }
-//   } catch (apiError) {
-//     console.error(`Error during API calls for company '${companyName}':`, apiError.message);
-//   }
-// };
-// cron.schedule("0 0 * * *", async () => {
-//   console.log("Running scheduled task at:", new Date().toString());
-  
-//   try {
-    
-//     const companies = await Company.find();
-//     console.log(`Fetched ${companies.length} companies.`);
-
-   
-//     for (const company of companies) {
-//       const { companyName, integration } = company;
-//       const { username, password } = integration || {};
-    
-//       if (!username || !password) {
-//         console.log(`Skipping company '${companyName}' due to missing integration details.`);
-//         continue;  
-//       }
-    
-//       await fetchData(username, password, companyName); 
-//     }
-    
-//     console.log("Scheduled task completed successfully.");
-//   } catch (error) {
-//     console.error("Error during scheduled task:", error.message);
-//   }
-// });
-
-
-
 const fetchData = async (userId, apiKey, companyName) => {
   if (!apiKey || !userId) {
     console.log(`Skipping company '${companyName}' due to missing integration details.`);
@@ -667,8 +594,6 @@ cron.schedule("0 0 * * *", async () => {
   }
 });
 
- 
-
 
 
 
@@ -677,45 +602,42 @@ cron.schedule("0 0 * * *", async () => {
 router.put("/updateIntegration", tokenVerification, async (req, res) => {
   const { username, password } = req.body;
 
+  // Validate input
   if (!username || !password) {
     return res.status(400).json({ error: "Username and password are required." });
   }
-  
-  try {
-    // Get user with the help of token
-    const userIdFromToken = req.userIdFromToken;
-    const user = await User.findById(userIdFromToken).select("company");
-    console.log("Fetched User:", user);
-    
 
-    // check conditions here
-    if (!user || !user.company || !user.company.companyName) {
-      return res.status(404).json({ error: "Company not associated with user." });
+  try {
+    // Get user ID from token
+    const userIdFromToken = req.userIdFromToken;
+
+    // Fetch user to get the associated company ID
+    const user = await User.findById(userIdFromToken).select("company");
+    if (!user || !user.company) {
+      return res.status(404).json({ error: "User or associated company not found." });
     }
-    
-    const { companyName } = user.company;
-    
-    // Fetch company by companyName
-    const company = await Company.findOne({ companyName });
-    console.log("Fetched Company:", company);
-    
+
+    const companyId = user.company; // Directly using companyId
+
+    // Fetch company using the companyId
+    const company = await Company.findById(companyId);
     if (!company) {
       return res.status(404).json({ error: "Company not found." });
     }
-    
+
+    // Ensure integration object exists
     if (!company.integration) {
-      company.integration = {}; // Initialize integration object if missing
+      company.integration = {}; // Initialize if missing
     }
-    
-    // extract username and password from company and set into the username and password
+
+    // Update integration credentials
     company.integration.username = username;
     company.integration.password = password;
 
-    // Save the userId and Apikey
+    // Save updated company details
     await company.save();
-    
 
-      res.status(200).json({
+    res.status(200).json({
       message: "Integration updated successfully.",
       company,
     });
@@ -723,8 +645,8 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
     console.error("Error Occurred:", err.message);
     res.status(500).json({ error: "Server error.", details: err.message });
   }
-  
 });
+
 
 
 
