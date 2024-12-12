@@ -815,4 +815,73 @@ router.post('/handleRequest', async (req, res) => {
 
 
 
+
+// monthly progress api
+router.post('/monthlyProgress', async (req, res) => {
+  const { question } = req.body; // Get user question from the request body
+
+  // Validate the user question (Check if the question includes "monthly progress")
+  if (!question || !question.toLowerCase().includes("monthly progress")) {
+    return res.status(400).json({ message: 'Invalid question format' });
+  }
+
+  try {
+    // Fetch relevant data from the Integration collection
+    const progressData = await Integration.find({ apiName: '/appointments' });
+
+    if (!progressData.length) {
+      return res.status(404).json({ message: 'No progress data found' });
+    }
+
+    // Structure for storing monthly progress summary
+    const result = {
+      labels: [], // List of months
+      completedTasks: [], // Tasks completed each month
+      pendingTasks: [], // Pending tasks for each month
+      totalHours: [], // Total hours spent each month
+    };
+
+    // Process each progress data entry
+    progressData.forEach((entry) => {
+      const { data } = entry; // Assuming 'data' contains progress details as an array
+
+      data.forEach((item) => {
+        const date = item.date; // Example: '2024-12-11'
+        if (date && typeof date === 'string') {
+          const month = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
+
+          // Check if this month is already processed
+          if (!result.labels.includes(month)) {
+            result.labels.push(month);
+            result.completedTasks.push(0);
+            result.pendingTasks.push(0);
+            result.totalHours.push(0);
+          }
+
+          // Get the index of the month
+          const index = result.labels.indexOf(month);
+
+          // Update completed tasks, pending tasks, and hours
+          result.completedTasks[index] += item.completed ? 1 : 0;
+          result.pendingTasks[index] += item.pending ? 1 : 0;
+          result.totalHours[index] += parseFloat(item.hours || 0); // Ensure hours is a number
+        }
+      });
+    });
+
+    // Return the processed result
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching monthly progress:', error.message);
+    return res.status(500).json({ message: 'Internal server error', details: error.message });
+  }
+});
+
+module.exports = router;
+
+
+
+
+
+
 module.exports = router;
