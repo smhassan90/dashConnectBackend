@@ -815,8 +815,6 @@ router.post('/handleRequest', async (req, res) => {
 
 
 
-
-// monthly progress api
 router.post('/monthlyProgress', async (req, res) => {
   const { question } = req.body; // Get user question from the request body
 
@@ -877,7 +875,137 @@ router.post('/monthlyProgress', async (req, res) => {
   }
 });
 
-module.exports = router;
+
+
+router.post('/monthlyTasks', async (req, res) => {
+  const { question } = req.body; // Get user question from the request body
+  
+  // Remove validation logic (to handle more general queries)
+  try {
+    // Get the current month and year for filtering
+    const currentMonth = new Date().getMonth(); // Current month (0-11)
+    const currentYear = new Date().getFullYear(); // Current year
+
+    // Get the user ID from the token (assuming user info is available)
+    const userIdFromToken = req.userIdFromToken;
+
+    // Fetch relevant data from the Integration collection (appointments data)
+    const appointmentsData = await Integration.find({
+      apiName: '/appointments',
+      userId: userIdFromToken, // Assuming userId is part of the document
+    });
+
+    if (appointmentsData.length === 0) {
+      return res.status(404).json({ message: 'No appointments data found for this user' });
+    }
+
+    // Structure for storing monthly progress summary
+    const result = {
+      month: `${currentYear}-${currentMonth + 1}`, // Format YYYY-MM
+      tasksCompleted: 0, // Number of completed tasks
+    };
+
+    // Process each appointment data entry
+    appointmentsData.forEach((appointmentData) => {
+      const { data } = appointmentData; // Assuming 'data' contains the appointment details
+
+      data.forEach((item) => {
+        const date = item.date; // Example: '2024-12-11'
+        
+        if (date && typeof date === 'string') {
+          const appointmentMonth = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
+
+          // Check if this is the current month
+          if (appointmentMonth === result.month) {
+            // Count the completed tasks (appointments)
+            if (item.completed) {
+              result.tasksCompleted += 1;
+            }
+          }
+        }
+      });
+    });
+
+    // Return the processed result
+    return res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Error fetching monthly progress:', error.message);
+    return res.status(500).json({ message: 'Internal server error', details: error.message });
+  }
+});
+
+
+
+
+router.post('/taskSummary', async (req, res) => {
+  const { question } = req.body; // Get user question from the request body
+  
+  // Check if the question contains keywords related to tasks summary
+  if (!question || !(question.toLowerCase().includes("task") && question.toLowerCase().includes("summary"))) {
+    return res.status(400).json({ message: 'Invalid question format' });
+  }
+
+  try {
+    // Get the user ID from the token (assuming user info is available)
+    const userIdFromToken = req.userIdFromToken;
+
+    // Fetch relevant data from the Integration collection (appointments data)
+    const appointmentsData = await Integration.find({
+      apiName: '/appointments',
+      userId: userIdFromToken, // Assuming userId is part of the document
+    });
+
+    if (appointmentsData.length === 0) {
+      return res.status(404).json({ message: 'No appointment data found for this user' });
+    }
+
+    // Structure for storing the task summary
+    const result = {
+      labels: [], // List of months (e.g., '2024-12')
+      completedTasks: [], // Completed tasks count for each month
+    };
+
+    // Process each appointment data entry
+    appointmentsData.forEach((appointmentData) => {
+      const { data } = appointmentData; // Assuming 'data' contains the task details
+
+      data.forEach((item) => {
+        const date = item.date; // Example: '2024-12-11'
+        
+        if (date && typeof date === 'string') {
+          const taskMonth = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
+
+          // Check if this month is already in the result
+          if (!result.labels.includes(taskMonth)) {
+            result.labels.push(taskMonth);
+            result.completedTasks.push(0);
+          }
+
+          // Get the index of the month
+          const index = result.labels.indexOf(taskMonth);
+
+          // If the task is completed, increment the completed tasks count for that month
+          if (item.completed) {
+            result.completedTasks[index] += 1;
+          }
+        }
+      });
+    });
+
+    // Send the task summary as a response
+    return res.status(200).json({
+      message: 'Task summary retrieved successfully.',
+      totalCompletedTasks: result.completedTasks.reduce((acc, curr) => acc + curr, 0), // Sum up all completed tasks
+      details: result,
+    });
+
+  } catch (error) {
+    console.error('Error fetching task summary:', error.message);
+    return res.status(500).json({ message: 'Internal server error', details: error.message });
+  }
+});
+
 
 
 
