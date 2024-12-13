@@ -179,9 +179,10 @@ router.post("/login", async (req, res) => {
 
 
 // create --> Update Employee API
-router.put("/updateEmployee", tokenVerification, async (req, res) => {
+router.put("/updateEmployee/:employeeId", tokenVerification, async (req, res) => {
   try {
-      const { employeeId, firstName, lastName, email, role } = req.body; 
+      const { firstName, lastName, email, role } = req.body;
+      const { employeeId } = req.params
 
       // Validate the employee ID
       if (!mongoose.isValidObjectId(employeeId)) {
@@ -229,9 +230,9 @@ router.put("/updateEmployee", tokenVerification, async (req, res) => {
 
  
 // create --> Delete Employee API
-router.delete("/deleteEmployee", tokenVerification, async (req, res) => {
+router.delete("/deleteEmployee/:employeeId", tokenVerification, async (req, res) => {
   try {
-      const { employeeId } = req.body; 
+      const { employeeId } = req.params; 
 
       if (!mongoose.isValidObjectId(employeeId)) {
           return res.status(400).send({ status: 400, message: "Invalid employee ID" });
