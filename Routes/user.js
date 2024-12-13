@@ -681,7 +681,7 @@ router.put("/disconnectIntegration", tokenVerification, async (req, res) => {
     await company.save();
 
     res.status(200).json({
-      message: "Integration username and password nullified successfully.",
+      message: "Disconnect successfully.",
     });
   } catch (err) {
     console.error("Error Occurred:", err.message);
