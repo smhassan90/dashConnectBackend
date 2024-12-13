@@ -25,7 +25,7 @@ mongoose.connect(url)
 
 
 //TOOD: add /v1/
-app.use('/api/user', authRoute);
+app.use('/api/user/v1', authRoute);
 
 app.listen(3000, () => {
     console.log("Server is running on port 3000");
