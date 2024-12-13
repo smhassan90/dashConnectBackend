@@ -181,7 +181,7 @@ router.post("/login", async (req, res) => {
 // create --> Update Employee API
 router.put("/updateEmployee", tokenVerification, async (req, res) => {
   try {
-      const { employeeId, firstName, lastName, email, password, role } = req.body; 
+      const { employeeId, firstName, lastName, email, role } = req.body; 
 
       // Validate the employee ID
       if (!mongoose.isValidObjectId(employeeId)) {
@@ -208,7 +208,6 @@ router.put("/updateEmployee", tokenVerification, async (req, res) => {
               firstName,
               lastName,
               email,
-              password: password ? bcrypt.hashSync(password, 10) : employee.password, 
               role,
           },
           { new: true, runValidators: true } // Return the updated document and run validators
@@ -744,7 +743,7 @@ router.post("/appendQuestion", tokenVerification,async (req, res) => {
 
 
 // API route to handle dynamic requests based on frontend message
-router.post('/handleRequest', async (req, res) => {
+router.post('/summaryOfAppoinments', async (req, res) => {
   const { userQuestion } = req.body; // Get user question from the request body
 
   // Validate the user question
