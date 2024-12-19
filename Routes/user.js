@@ -699,7 +699,7 @@ router.get('/createSchema', async (req, res) => {
   try {
     const filePath = path.join(__dirname, 'data', 'sheet1.csv');
     const rows = []; 
-    // Read and parse CSV
+    // Read and parse CSV 
     fs.createReadStream(filePath)
       .pipe(csvParser())
       .on('data', (row) => rows.push(row))
