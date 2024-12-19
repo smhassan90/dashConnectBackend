@@ -711,7 +711,7 @@ const csvUpload = multer({ storage: csvStorage });
 
 
 // API for uploading CSV file
-app.post('/uploadCsv', csvUpload.single('csvFile'), async (req, res) => {
+router.post('/uploadCsv', csvUpload.single('csvFile'), async (req, res) => {
   try {
     const filePath = path.join(__dirname, 'uploads/csv_files', req.file.filename);
 
