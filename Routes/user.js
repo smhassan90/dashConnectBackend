@@ -1,5 +1,6 @@
 // Routes/user.js
 const express = require("express");
+const multer = require('multer');
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
@@ -8,7 +9,6 @@ require("dotenv/config");
 const tokenVerification = require("../config/tokenVerification");
 const mongoose = require("mongoose");
 const Company = require("../models/Company"); 
-const multer = require('multer');
 const randomstring = require('randomstring')
 const sendMail = require('../config/nodemailer')
 const axios = require('axios')
@@ -16,7 +16,11 @@ const cron = require('node-cron')
 const Integration = require('../models/Integration')
 const MasterIntegration = require('../models/MasterIntegration')
 const MetaIntegration = require('../models/Meta_Integration')
-
+const moment = require('moment');
+const CSV = require('../models/CSV')
+const path = require('path');
+const fs = require('fs');
+const csv = require('csv-parser');
 
 
 router.post('/metaIntegration', async (req, res) => {
@@ -650,7 +654,7 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
 
 
 
-// create --> disconect integration api
+// create --> disconect integration API
 router.put("/disconnectIntegration", tokenVerification, async (req, res) => {
   try {
     // Get user ID from token
@@ -688,6 +692,48 @@ router.put("/disconnectIntegration", tokenVerification, async (req, res) => {
     res.status(500).json({ error: "Server error.", details: err.message });
   }
 });
+
+
+
+
+// create --> csv file upload API
+const csvStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/csv_files'); // Folder where the CSV file will be uploaded
+  },
+  filename: (req, file, cb) => {
+    // Generate a unique filename for the CSV file to avoid conflicts
+    cb(null, Date.now() + path.extname(file.originalname)); 
+  },
+});
+
+const csvUpload = multer({ storage: csvStorage });
+
+
+// API for uploading CSV file
+app.post('/uploadCsv', csvUpload.single('csvFile'), async (req, res) => {
+  try {
+    const filePath = path.join(__dirname, 'uploads/csv_files', req.file.filename);
+
+    const results = [];
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on('data', (data) => results.push(data))
+      .on('end', async () => {
+        try {
+          await CSV.insertMany(results);
+          res.status(200).json({ message: 'CSV data uploaded and saved successfully' });
+        } catch (error) {
+          console.error('Error saving data to MongoDB:', error);
+          res.status(500).json({ error: 'Error saving CSV data to MongoDB' });
+        }
+      });
+  } catch (error) {
+    console.error('Error processing CSV file:', error);
+    res.status(500).json({ error: 'Error processing the CSV file' });
+  }
+});
+
 
 
 
@@ -743,273 +789,394 @@ router.post("/appendQuestion", tokenVerification,async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
 // API route to handle dynamic requests based on frontend message
-router.post('/summaryOfAppoinments', async (req, res) => {
-  const { userQuestion } = req.body; // Get user question from the request body
+// router.post('/summaryOfAppoinments', async (req, res) => {
+//   const { userQuestion } = req.body; // Get user question from the request body
 
-  // Validate the user question
-  if (!userQuestion || !userQuestion.toLowerCase().includes("summary of appointments")) {
-    return res.status(400).json({ message: 'Invalid question format' });
-  }
+//   // Validate the user question
+//   if (!userQuestion || !userQuestion.toLowerCase().includes("summary of appointments")) {
+//     return res.status(400).json({ message: 'Invalid question format' });
+//   }
 
-  try {
-    // Fetch only data related to '/appointments' from Integration collection
-    const appointmentsData = await Integration.find({ apiName: '/appointments' });
+//   try {
+//     // Fetch only data related to '/appointments' from Integration collection
+//     const appointmentsData = await Integration.find({ apiName: '/appointments' });
 
-    if (appointmentsData.length === 0) {
-      return res.status(404).json({ message: "No appointment data found" });
-    }
+//     if (appointmentsData.length === 0) {
+//       return res.status(404).json({ message: "No appointment data found" });
+//     }
 
-    // Initialize the result structure
-    const result = {
-      labels: [], // Dates
-      totalAppointments: [], // Count of total appointments per day
-      totalPaidAppointments: [], // Count of paid appointments per day
-      totalRevenue: [], // Sum of revenue per day
-    };
+//     // Initialize the result structure
+//     const result = {
+//       labels: [], // Dates
+//       totalAppointments: [], // Count of total appointments per day
+//       totalPaidAppointments: [], // Count of paid appointments per day
+//       totalRevenue: [], // Sum of revenue per day
+//     };
 
-    // Process each item in the appointmentsData array
-    appointmentsData.forEach((appointmentData) => {
-      const { data } = appointmentData; // Assuming 'data' is an array
+//     // Process each item in the appointmentsData array
+//     appointmentsData.forEach((appointmentData) => {
+//       const { data } = appointmentData; // Assuming 'data' is an array
 
-      data.forEach((item) => {
-        const date = item.date;
+//       data.forEach((item) => {
+//         const date = item.date;
 
-        // Check if the date exists and is a valid string
-        if (date && typeof date === 'string') {
-          const appointmentDate = date.split(' ')[0]; // Extract date in YYYY-MM-DD format
+//         // Check if the date exists and is a valid string
+//         if (date && typeof date === 'string') {
+//           const appointmentDate = date.split(' ')[0]; // Extract date in YYYY-MM-DD format
 
-          // Check if the date already exists in the result
-          if (!result.labels.includes(appointmentDate)) {
-            result.labels.push(appointmentDate);
-            result.totalAppointments.push(0);
-            result.totalPaidAppointments.push(0);
-            result.totalRevenue.push(0);
-          }
+//           // Check if the date already exists in the result
+//           if (!result.labels.includes(appointmentDate)) {
+//             result.labels.push(appointmentDate);
+//             result.totalAppointments.push(0);
+//             result.totalPaidAppointments.push(0);
+//             result.totalRevenue.push(0);
+//           }
 
-          // Find the index of the current date in labels
-          const index = result.labels.indexOf(appointmentDate);
+//           // Find the index of the current date in labels
+//           const index = result.labels.indexOf(appointmentDate);
 
-          // Increment total appointments
-          result.totalAppointments[index]++;
+//           // Increment total appointments
+//           result.totalAppointments[index]++;
 
-          // Increment paid appointments and total revenue if the appointment is paid
-          if (item.paid === 'yes') {
-            result.totalPaidAppointments[index]++;
-            result.totalRevenue[index] += parseFloat(item.price || 0); // Ensure price is parsed as a number
-          }
-        }
-      });
-    });
+//           // Increment paid appointments and total revenue if the appointment is paid
+//           if (item.paid === 'yes') {
+//             result.totalPaidAppointments[index]++;
+//             result.totalRevenue[index] += parseFloat(item.price || 0); // Ensure price is parsed as a number
+//           }
+//         }
+//       });
+//     });
 
-    // Send the result as a JSON response
-    return res.status(200).json(result);
+//     // Send the result as a JSON response
+//     return res.status(200).json(result);
 
-  } catch (error) {
-    console.error('Error fetching appointment summary:', error.message);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-
+//   } catch (error) {
+//     console.error('Error fetching appointment summary:', error.message);
+//     return res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
 
 
 
-router.post('/monthlyProgress', async (req, res) => {
-  const { question } = req.body; // Get user question from the request body
-
-  // Validate the user question (Check if the question includes "monthly progress")
-  if (!question || !question.toLowerCase().includes("monthly progress")) {
-    return res.status(400).json({ message: 'Invalid question format' });
-  }
-
-  try {
-    // Fetch relevant data from the Integration collection
-    const progressData = await Integration.find({ apiName: '/appointments' });
-
-    if (!progressData.length) {
-      return res.status(404).json({ message: 'No progress data found' });
-    }
-
-    // Structure for storing monthly progress summary
-    const result = {
-      labels: [], // List of months
-      completedTasks: [], // Tasks completed each month
-      pendingTasks: [], // Pending tasks for each month
-      totalHours: [], // Total hours spent each month
-    };
-
-    // Process each progress data entry
-    progressData.forEach((entry) => {
-      const { data } = entry; // Assuming 'data' contains progress details as an array
-
-      data.forEach((item) => {
-        const date = item.date; // Example: '2024-12-11'
-        if (date && typeof date === 'string') {
-          const month = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
-
-          // Check if this month is already processed
-          if (!result.labels.includes(month)) {
-            result.labels.push(month);
-            result.completedTasks.push(0);
-            result.pendingTasks.push(0);
-            result.totalHours.push(0);
-          }
-
-          // Get the index of the month
-          const index = result.labels.indexOf(month);
-
-          // Update completed tasks, pending tasks, and hours
-          result.completedTasks[index] += item.completed ? 1 : 0;
-          result.pendingTasks[index] += item.pending ? 1 : 0;
-          result.totalHours[index] += parseFloat(item.hours || 0); // Ensure hours is a number
-        }
-      });
-    });
-
-    // Return the processed result
-    return res.status(200).json(result);
-  } catch (error) {
-    console.error('Error fetching monthly progress:', error.message);
-    return res.status(500).json({ message: 'Internal server error', details: error.message });
-  }
-});
 
 
+// router.post('/monthlyProgress', async (req, res) => {
+//   const { question } = req.body; // Get user question from the request body
 
-router.post('/monthlyTasks', async (req, res) => {
-  const { question } = req.body; // Get user question from the request body
+//   // Validate the user question (Check if the question includes "monthly progress")
+//   if (!question || !question.toLowerCase().includes("monthly progress")) {
+//     return res.status(400).json({ message: 'Invalid question format' });
+//   }
+
+//   try {
+//     // Fetch relevant data from the Integration collection
+//     const progressData = await Integration.find({ apiName: '/appointments' });
+
+//     if (!progressData.length) {
+//       return res.status(404).json({ message: 'No progress data found' });
+//     }
+
+//     // Structure for storing monthly progress summary
+//     const result = {
+//       labels: [], // List of months
+//       completedTasks: [], // Tasks completed each month
+//       pendingTasks: [], // Pending tasks for each month
+//       totalHours: [], // Total hours spent each month
+//     };
+
+//     // Process each progress data entry
+//     progressData.forEach((entry) => {
+//       const { data } = entry; // Assuming 'data' contains progress details as an array
+
+//       data.forEach((item) => {
+//         const date = item.date; // Example: '2024-12-11'
+//         if (date && typeof date === 'string') {
+//           const month = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
+
+//           // Check if this month is already processed
+//           if (!result.labels.includes(month)) {
+//             result.labels.push(month);
+//             result.completedTasks.push(0);
+//             result.pendingTasks.push(0);
+//             result.totalHours.push(0);
+//           }
+
+//           // Get the index of the month
+//           const index = result.labels.indexOf(month);
+
+//           // Update completed tasks, pending tasks, and hours
+//           result.completedTasks[index] += item.completed ? 1 : 0;
+//           result.pendingTasks[index] += item.pending ? 1 : 0;
+//           result.totalHours[index] += parseFloat(item.hours || 0); // Ensure hours is a number
+//         }
+//       });
+//     });
+
+//     // Return the processed result
+//     return res.status(200).json(result);
+//   } catch (error) {
+//     console.error('Error fetching monthly progress:', error.message);
+//     return res.status(500).json({ message: 'Internal server error', details: error.message });
+//   }
+// });
+
+
+
+// router.post('/monthlyTasks', async (req, res) => {
+//   const { question } = req.body; // Get user question from the request body
   
-  // Remove validation logic (to handle more general queries)
-  try {
-    // Get the current month and year for filtering
-    const currentMonth = new Date().getMonth(); // Current month (0-11)
-    const currentYear = new Date().getFullYear(); // Current year
+//   // Remove validation logic (to handle more general queries)
+//   try {
+//     // Get the current month and year for filtering
+//     const currentMonth = new Date().getMonth(); // Current month (0-11)
+//     const currentYear = new Date().getFullYear(); // Current year
 
-    // Get the user ID from the token (assuming user info is available)
-    const userIdFromToken = req.userIdFromToken;
+//     // Get the user ID from the token (assuming user info is available)
+//     const userIdFromToken = req.userIdFromToken;
 
-    // Fetch relevant data from the Integration collection (appointments data)
-    const appointmentsData = await Integration.find({
-      apiName: '/appointments',
-      userId: userIdFromToken, // Assuming userId is part of the document
-    });
+//     // Fetch relevant data from the Integration collection (appointments data)
+//     const appointmentsData = await Integration.find({
+//       apiName: '/appointments',
+//       userId: userIdFromToken, // Assuming userId is part of the document
+//     });
 
-    if (appointmentsData.length === 0) {
-      return res.status(404).json({ message: 'No appointments data found for this user' });
-    }
+//     if (appointmentsData.length === 0) {
+//       return res.status(404).json({ message: 'No appointments data found for this user' });
+//     }
 
-    // Structure for storing monthly progress summary
-    const result = {
-      month: `${currentYear}-${currentMonth + 1}`, // Format YYYY-MM
-      tasksCompleted: 0, // Number of completed tasks
-    };
+//     // Structure for storing monthly progress summary
+//     const result = {
+//       month: `${currentYear}-${currentMonth + 1}`, // Format YYYY-MM
+//       tasksCompleted: 0, // Number of completed tasks
+//     };
 
-    // Process each appointment data entry
-    appointmentsData.forEach((appointmentData) => {
-      const { data } = appointmentData; // Assuming 'data' contains the appointment details
+//     // Process each appointment data entry
+//     appointmentsData.forEach((appointmentData) => {
+//       const { data } = appointmentData; // Assuming 'data' contains the appointment details
 
-      data.forEach((item) => {
-        const date = item.date; // Example: '2024-12-11'
+//       data.forEach((item) => {
+//         const date = item.date; // Example: '2024-12-11'
         
-        if (date && typeof date === 'string') {
-          const appointmentMonth = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
+//         if (date && typeof date === 'string') {
+//           const appointmentMonth = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
 
-          // Check if this is the current month
-          if (appointmentMonth === result.month) {
-            // Count the completed tasks (appointments)
-            if (item.completed) {
-              result.tasksCompleted += 1;
-            }
-          }
-        }
-      });
-    });
+//           // Check if this is the current month
+//           if (appointmentMonth === result.month) {
+//             // Count the completed tasks (appointments)
+//             if (item.completed) {
+//               result.tasksCompleted += 1;
+//             }
+//           }
+//         }
+//       });
+//     });
 
-    // Return the processed result
-    return res.status(200).json(result);
+//     // Return the processed result
+//     return res.status(200).json(result);
 
-  } catch (error) {
-    console.error('Error fetching monthly progress:', error.message);
-    return res.status(500).json({ message: 'Internal server error', details: error.message });
-  }
-});
-
-
+//   } catch (error) {
+//     console.error('Error fetching monthly progress:', error.message);
+//     return res.status(500).json({ message: 'Internal server error', details: error.message });
+//   }
+// });
 
 
-router.post('/taskSummary', async (req, res) => {
-  const { question } = req.body; // Get user question from the request body
+
+
+// router.post('/taskSummary', async (req, res) => {
+//   const { question } = req.body; // Get user question from the request body
   
-  // Check if the question contains keywords related to tasks summary
-  if (!question || !(question.toLowerCase().includes("task") && question.toLowerCase().includes("summary"))) {
-    return res.status(400).json({ message: 'Invalid question format' });
-  }
+//   // Check if the question contains keywords related to tasks summary
+//   if (!question || !(question.toLowerCase().includes("task") && question.toLowerCase().includes("summary"))) {
+//     return res.status(400).json({ message: 'Invalid question format' });
+//   }
 
-  try {
-    // Get the user ID from the token (assuming user info is available)
-    const userIdFromToken = req.userIdFromToken;
+//   try {
+//     // Get the user ID from the token (assuming user info is available)
+//     const userIdFromToken = req.userIdFromToken;
 
-    // Fetch relevant data from the Integration collection (appointments data)
-    const appointmentsData = await Integration.find({
-      apiName: '/appointments',
-      userId: userIdFromToken, // Assuming userId is part of the document
-    });
+//     // Fetch relevant data from the Integration collection (appointments data)
+//     const appointmentsData = await Integration.find({
+//       apiName: '/appointments',
+//       userId: userIdFromToken, // Assuming userId is part of the document
+//     });
 
-    if (appointmentsData.length === 0) {
-      return res.status(404).json({ message: 'No appointment data found for this user' });
-    }
+//     if (appointmentsData.length === 0) {
+//       return res.status(404).json({ message: 'No appointment data found for this user' });
+//     }
 
-    // Structure for storing the task summary
-    const result = {
-      labels: [], // List of months (e.g., '2024-12')
-      completedTasks: [], // Completed tasks count for each month
-    };
+//     // Structure for storing the task summary
+//     const result = {
+//       labels: [], // List of months (e.g., '2024-12')
+//       completedTasks: [], // Completed tasks count for each month
+//     };
 
-    // Process each appointment data entry
-    appointmentsData.forEach((appointmentData) => {
-      const { data } = appointmentData; // Assuming 'data' contains the task details
+//     // Process each appointment data entry
+//     appointmentsData.forEach((appointmentData) => {
+//       const { data } = appointmentData; // Assuming 'data' contains the task details
 
-      data.forEach((item) => {
-        const date = item.date; // Example: '2024-12-11'
+//       data.forEach((item) => {
+//         const date = item.date; // Example: '2024-12-11'
         
-        if (date && typeof date === 'string') {
-          const taskMonth = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
+//         if (date && typeof date === 'string') {
+//           const taskMonth = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
 
-          // Check if this month is already in the result
-          if (!result.labels.includes(taskMonth)) {
-            result.labels.push(taskMonth);
-            result.completedTasks.push(0);
-          }
+//           // Check if this month is already in the result
+//           if (!result.labels.includes(taskMonth)) {
+//             result.labels.push(taskMonth);
+//             result.completedTasks.push(0);
+//           }
 
-          // Get the index of the month
-          const index = result.labels.indexOf(taskMonth);
+//           // Get the index of the month
+//           const index = result.labels.indexOf(taskMonth);
 
-          // If the task is completed, increment the completed tasks count for that month
-          if (item.completed) {
-            result.completedTasks[index] += 1;
-          }
-        }
-      });
-    });
+//           // If the task is completed, increment the completed tasks count for that month
+//           if (item.completed) {
+//             result.completedTasks[index] += 1;
+//           }
+//         }
+//       });
+//     });
 
-    // Send the task summary as a response
-    return res.status(200).json({
-      message: 'Task summary retrieved successfully.',
-      totalCompletedTasks: result.completedTasks.reduce((acc, curr) => acc + curr, 0), // Sum up all completed tasks
-      details: result,
-    });
+//     // Send the task summary as a response
+//     return res.status(200).json({
+//       message: 'Task summary retrieved successfully.',
+//       totalCompletedTasks: result.completedTasks.reduce((acc, curr) => acc + curr, 0), // Sum up all completed tasks
+//       details: result,
+//     });
 
-  } catch (error) {
-    console.error('Error fetching task summary:', error.message);
-    return res.status(500).json({ message: 'Internal server error', details: error.message });
-  }
-});
-
-
+//   } catch (error) {
+//     console.error('Error fetching task summary:', error.message);
+//     return res.status(500).json({ message: 'Internal server error', details: error.message });
+//   }
+// });
 
 
 
+////////////////////////////////////////////////
 
+// router.post('/query', async (req, res) => {
+//   const { question } = req.body;
+
+//   try {
+//     let aggregation = [];
+//     let period = 30; // Default to 30 days
+//     let unit = 'days'; // Default to 'days'
+//     let type = null;  // For summary type (appointments, clients, etc.)
+
+//     // Parse for date range like "last X days", "last X months", "last X years"
+//     if (question.includes('last')) {
+//       if (question.includes('day')) {
+//         period = parseInt(question.match(/\d+/)[0], 10);
+//         unit = 'days';
+//       } else if (question.includes('month')) {
+//         period = parseInt(question.match(/\d+/)[0], 10);
+//         unit = 'months';
+//       } else if (question.includes('year')) {
+//         period = parseInt(question.match(/\d+/)[0], 10);
+//         unit = 'years';
+//       }
+
+//       const startDate = moment().subtract(period, unit).toDate();
+
+//       // Match documents where the date is within the calculated range
+//       aggregation.push({
+//         $match: {
+//           date: { $gte: startDate }
+//         }
+//       });
+//     }
+
+//     // Determine the type of summary requested based on keywords in the question
+//     if (question.includes('summary')) {
+//       if (question.includes('appointments')) {
+//         type = 'appointments';
+//         aggregation.push({
+//           $group: {
+//             _id: null,
+//             totalAppointments: { $sum: 1 },
+//             totalAmountPaid: { $sum: '$amountPaid' }
+//           }
+//         });
+//         aggregation.push({
+//           $project: {
+//             totalAppointments: 1,
+//             totalAmountPaid: 1
+//           }
+//         });
+//       } else if (question.includes('clients')) {
+//         type = 'clients';
+//         aggregation.push({
+//           $group: {
+//             _id: null,
+//             totalClients: { $sum: 1 }
+//           }
+//         });
+//         aggregation.push({
+//           $project: {
+//             totalClients: 1
+//           }
+//         });
+//       } else if (question.includes('block')) {
+//         type = 'block';
+//         aggregation.push({
+//           $group: {
+//             _id: null,
+//             totalBlocks: { $sum: 1 }
+//           }
+//         });
+//         aggregation.push({
+//           $project: {
+//             totalBlocks: 1
+//           }
+//         });
+//       } else if (question.includes('calendar')) {
+//         type = 'calendar';
+//         aggregation.push({
+//           $project: {
+//             calendarDetails: 1
+//           }
+//         });
+//       } else {
+//         // Default to appointments summary if no specific summary type is mentioned
+//         type = 'appointments';
+//         aggregation.push({
+//           $group: {
+//             _id: null,
+//             totalAppointments: { $sum: 1 },
+//             totalAmountPaid: { $sum: '$amountPaid' }
+//           }
+//         });
+//         aggregation.push({
+//           $project: {
+//             totalAppointments: 1,
+//             totalAmountPaid: 1
+//           }
+//         });
+//       }
+//     }
+
+//     // Execute aggregation query
+//     const data = await Integration.aggregate(aggregation);
+
+//     // Send response back
+//     res.json({ data, type });
+
+//   } catch (error) {
+//     console.error('Error fetching data:', error);
+//     res.status(500).json({ error: 'Internal Server Error' });
+//   }
+// });
 
 module.exports = router;
