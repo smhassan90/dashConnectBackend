@@ -16,11 +16,9 @@ const cron = require('node-cron')
 const Integration = require('../models/Integration')
 const MasterIntegration = require('../models/MasterIntegration')
 const MetaIntegration = require('../models/Meta_Integration')
-const moment = require('moment');
-const CSV = require('../models/CSV')
 const path = require('path');
 const fs = require('fs');
-const csv = require('csv-parser');
+const csvParser = require('csv-parser');
 
 
 router.post('/metaIntegration', async (req, res) => {
@@ -697,45 +695,49 @@ router.put("/disconnectIntegration", tokenVerification, async (req, res) => {
 
 
 // create --> csv file upload API
-const csvStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/csv_files'); // Folder where the CSV file will be uploaded
-  },
-  filename: (req, file, cb) => {
-    // Generate a unique filename for the CSV file to avoid conflicts
-    cb(null, Date.now() + path.extname(file.originalname)); 
-  },
-});
-
-const csvUpload = multer({ storage: csvStorage });
-
-
-// API for uploading CSV file
-router.post('/uploadCsv', csvUpload.single('csvFile'), async (req, res) => {
+router.get('/createSchema', async (req, res) => {
   try {
-    const filePath = path.join(__dirname, 'uploads/csv_files', req.file.filename);
-
-    const results = [];
+    const filePath = path.join(__dirname, 'data', 'sheet1.csv');
+    const rows = []; 
+    // Read and parse CSV
     fs.createReadStream(filePath)
-      .pipe(csv())
-      .on('data', (data) => results.push(data))
+      .pipe(csvParser())
+      .on('data', (row) => rows.push(row))
       .on('end', async () => {
-        try {
-          await CSV.insertMany(results);
-          res.status(200).json({ message: 'CSV data uploaded and saved successfully' });
-        } catch (error) {
-          console.error('Error saving data to MongoDB:', error);
-          res.status(500).json({ error: 'Error saving CSV data to MongoDB' });
+        if (rows.length === 0) {
+          return res.status(400).json({ message: 'CSV file is empty!' });
         }
+
+        // Create schema dynamically from the first row's keys
+        const columns = Object.keys(rows[0]);
+        const schemaDefinition = {};
+
+        columns.forEach((col) => {
+          // Dynamically determine the type based on the data
+          const firstValue = rows[0][col];
+          if (!isNaN(firstValue)) {
+            schemaDefinition[col] = { type: Number };  // For numeric columns
+          } else if (new Date(firstValue) !== 'Invalid Date' && !isNaN(new Date(firstValue))) {
+            schemaDefinition[col] = { type: Date };  // For date columns
+          } else {
+            schemaDefinition[col] = { type: String };  // Default to string
+          }
+        });
+
+        // Create the dynamic schema
+        const dynamicSchema = new mongoose.Schema(schemaDefinition);
+        const SheetModel = mongoose.model('sheet1', dynamicSchema);
+
+        // Insert data into MongoDB
+        await SheetModel.insertMany(rows);
+
+        res.status(200).json({ message: 'Schema created and data inserted successfully!' });
       });
   } catch (error) {
-    console.error('Error processing CSV file:', error);
-    res.status(500).json({ error: 'Error processing the CSV file' });
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Something went wrong', error });
   }
 });
-
-
-
 
 
 
