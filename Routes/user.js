@@ -458,36 +458,36 @@ router.post("/resetPassword", async (req, res) => {
 
 
 // create --> testConnection API
-  router.post("/testConnection", tokenVerification ,async (req, res) => {
-    const { userId, apiKey } = req.body;
+//   router.post("/testConnection", tokenVerification ,async (req, res) => {
+//     const { userId, apiKey } = req.body;
 
-  if (!userId || !apiKey) {
-    return res.status(400).json({ error: "API key and user ID are required" });
-  }
+//   if (!userId || !apiKey) {
+//     return res.status(400).json({ error: "API key and user ID are required" });
+//   }
 
-  try {
-    const response = await axios.get(
-      "https://acuityscheduling.com/api/v1/appointments?max=30",
-      {
-        auth : {
-          username: userId,
-          password: apiKey,
-        }
-      }
-    );
-    console.log(response);
+//   try {
+//     const response = await axios.get(
+//       "https://acuityscheduling.com/api/v1/appointments?max=30",
+//       {
+//         auth : {
+//           username: userId,
+//           password: apiKey,
+//         }
+//       }
+//     );
+//     console.log(response);
     
-    res.json({
-      message: "Appointment data fetched successfully",
-      data: response.data,
-    });
-  } catch (error) {
-    console.error("Error fetching appointments:", error.message);
-    res
-      .status(500)
-      .json({ error: "Failed to fetch appointments from Acuity API" });
-  }
-});
+//     res.json({
+//       message: "Appointment data fetched successfully",
+//       data: response.data,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching appointments:", error.message);
+//     res
+//       .status(500)
+//       .json({ error: "Failed to fetch appointments from Acuity API" });
+//   }
+// });
 
 
 router.get("/getIntegration",tokenVerification ,async(req,res)=>{
@@ -745,23 +745,23 @@ router.get('/createSchema', async (req, res) => {
 
 
 
-// router.post("/integration", tokenVerification, async (req, res) => {
-//   const { apiKey, userId } = req.body;
+router.post("/integration", tokenVerification, async (req, res) => {
+  const { apiKey, userId } = req.body;
 
-//   if (!apiKey || !userId) {
-//     return res.status(400).json({ error: "API key and user ID are required" });
-//   }
+  if (!apiKey || !userId) {
+    return res.status(400).json({ error: "API key and user ID are required" });
+  }
 
-//   try {
-//     await fetchData(apiKey, userId);
-//     res.json({
-//       message: "Data fetched and saved successfully",
-//     });
-//   } catch (error) {
-//     console.error("Error during API calls:", error.message);
-//     res.status(500).json({ error: "Failed to fetch data from Acuity API..." });
-//   }
-// });
+  try {
+    await fetchData(apiKey, userId);
+    res.json({
+      message: "Data fetched and saved successfully",
+    });
+  } catch (error) {
+    console.error("Error during API calls:", error.message);
+    res.status(500).json({ error: "Failed to fetch data from Acuity API..." });
+  }
+});
 
 
 
@@ -1157,6 +1157,55 @@ router.post('/testConnectionIntegration', async (req, res) => {
 
 ////////////////////////////////////////////////
 
+const pool = mysql.createPool({
+  host: '66.135.60.203',
+  port: 3308,
+  user: 'kamran',
+  password: 'Pma_109c',
+  database: 'dbtabib',
+});
+
+router.get('/tables-structure', (req, res) => {
+  pool.query('SHOW TABLES', (err, results) => {
+    if (err) {
+      console.error('Error fetching tables:', err);
+      res.status(500).send('Error retrieving tables');
+      return;
+    }
+
+    const tableNames = results.map(row => row['Tables_in_dbtabib']);
+    let tableStructurePromises = tableNames.map(table => {
+      return new Promise((resolve, reject) => {
+        // Query to get the structure of the table (columns and their data types)
+        pool.query(`DESCRIBE ${table}`, (err, columns) => {
+          if (err) {
+            reject(`Error describing table ${table}: ${err}`);
+          } else {
+            // Format the column structure
+            const columnStructure = {};
+            columns.forEach(column => {
+              columnStructure[column.Field] = column.Type;
+            });
+            resolve({
+              tableName: table,
+              columns: columnStructure
+            });
+          }
+        });
+      });
+    });
+
+    // Wait for all promises to resolve
+    Promise.all(tableStructurePromises)
+      .then(tableStructures => {
+        res.json(tableStructures);
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        res.status(500).send('Error retrieving table structure');
+      });
+  });
+});
 
 
 
