@@ -19,6 +19,7 @@ const MetaIntegration = require('../models/Meta_Integration')
 const path = require('path');
 const fs = require('fs');
 const csvParser = require('csv-parser');
+const mysql = require('mysql2');
 
 
 router.post('/metaIntegration', async (req, res) => {
@@ -457,8 +458,8 @@ router.post("/resetPassword", async (req, res) => {
 
 
 // create --> testConnection API
-router.post("/testConnection", tokenVerification ,async (req, res) => {
-  const { userId, apiKey } = req.body;
+  router.post("/testConnection", tokenVerification ,async (req, res) => {
+    const { userId, apiKey } = req.body;
 
   if (!userId || !apiKey) {
     return res.status(400).json({ error: "API key and user ID are required" });
@@ -787,6 +788,89 @@ router.post("/appendQuestion", tokenVerification,async (req, res) => {
     res.status(500).json({ error: "An error occurred while processing your request." });
   }
 });
+
+
+// Function to test the MySQL database connection
+async function testDbConnection(username, password, url) {
+  const match = url.match(/jdbc:mysql:\/\/(.*):(\d+)\/(.*)/);
+  if (!match) {
+      throw new Error('Invalid MySQL URL format');
+  }
+
+  const [_, host, port, dbname] = match;
+  return new Promise((resolve, reject) => {
+    console.log('host', host);
+    console.log('username', username);
+    console.log('port', port);
+    console.log('password', password);
+    console.log('dbname', dbname);
+    const connection = mysql.createConnection({
+        host: host,
+        user: username,
+        password: password,
+        database: dbname,
+        port: parseInt(port, 10),
+    });
+
+    connection.connect((err) => {
+        if (err) {
+            console.error('Connection error:', err.message);
+            resolve(false); // Resolve with false on failure
+        } else {
+            console.log('MySQL connection successful');
+            resolve(true); // Resolve with true on success
+        }
+        connection.end(); // Always close the connection
+    });
+});
+}
+
+// API endpoint to test the connection
+router.post('/testConnectionIntegration', async (req, res) => {
+  const { username, password, url, type } = req.body;
+
+  if (!type) {
+      return res.status(400).json({ error: 'Connection type is required' });
+  }
+
+  if (!username || !password || !url) {
+      return res.status(400).json({ error: 'Missing required fields: username, password, or url' });
+  }
+
+  if (type === 'mySQL') {
+      try {
+          const isConnected = await testDbConnection(username, password, url);
+
+          if (isConnected) {
+              return res.status(200).json({ status: 'success', message: 'MySQL connection successful' });
+          } else {
+              return res.status(500).json({ status: 'failure', message: 'MySQL connection failed' });
+          }
+      } catch (error) {
+          return res.status(400).json({ error: error.message });
+      }
+  } else if (type === 'acuity') {
+      try {
+          const response = await axios.get(`${url}/appointments?max=30`, {
+              auth: {
+                  username: username,
+                  password: password,
+              },
+          });
+
+          return res.json({
+              message: 'Acuity connection successful, appointment data fetched',
+              data: response.data,
+          });
+      } catch (error) {
+          console.error('Error fetching Acuity appointments:', error.message);
+          return res.status(500).json({ error: 'Failed to fetch appointments from Acuity API' });
+      }
+  } else {
+      return res.status(400).json({ error: 'Invalid connection type' });
+  }
+});
+
 
 
 
