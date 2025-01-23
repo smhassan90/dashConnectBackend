@@ -603,11 +603,11 @@ cron.schedule("0 0 * * *", async () => {
 
 // create --> update integration api
 router.put("/updateIntegration", tokenVerification, async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password , url , type } = req.body;
 
   // Validate input
-  if (!username || !password) {
-    return res.status(400).json({ error: "Username and password are required." });
+  if (!username && !password && !url && !type) {
+    return res.status(400).json({ error: "Username, password , url and type are required." });
   }
 
   try {
@@ -634,6 +634,8 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
     }
 
     // Update integration credentials
+    company.integration.type = type;
+    company.integration.url = url;
     company.integration.username = username;
     company.integration.password = password;
 
@@ -760,6 +762,9 @@ router.get('/createSchema', async (req, res) => {
 //     res.status(500).json({ error: "Failed to fetch data from Acuity API..." });
 //   }
 // });
+
+
+
 
 
 
