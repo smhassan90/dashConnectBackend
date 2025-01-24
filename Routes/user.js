@@ -20,6 +20,11 @@ const path = require('path');
 const fs = require('fs');
 const csvParser = require('csv-parser');
 const mysql = require('mysql2');
+const TableStructure = require("../models/TableStructure")
+const integrationCredentials = require("../models/IntegrationCredentials")
+const MetaIntegrationDetail = require("../models/MetaIntegrationDetails")
+const moment = require("moment")
+
 
 
 router.post('/metaIntegration', async (req, res) => {
@@ -50,6 +55,8 @@ router.post('/masterIntegration', async (req, res) => {
 });
 
 // --------------------------------       ------------------------------------- //
+
+
 
 // create --> user API
 router.post("/create", async (req, res) => {
@@ -1165,6 +1172,7 @@ const pool = mysql.createPool({
   database: 'dbtabib',
 });
 
+// Fetch MySQL data and save to MongoDB
 router.get('/tables-structure', (req, res) => {
   pool.query('SHOW TABLES', (err, results) => {
     if (err) {
@@ -1174,31 +1182,35 @@ router.get('/tables-structure', (req, res) => {
     }
 
     const tableNames = results.map(row => row['Tables_in_dbtabib']);
-    let tableStructurePromises = tableNames.map(table => {
+    const tableStructurePromises = tableNames.map(table => {
       return new Promise((resolve, reject) => {
-        // Query to get the structure of the table (columns and their data types)
         pool.query(`DESCRIBE ${table}`, (err, columns) => {
           if (err) {
             reject(`Error describing table ${table}: ${err}`);
           } else {
-            // Format the column structure
             const columnStructure = {};
             columns.forEach(column => {
               columnStructure[column.Field] = column.Type;
             });
             resolve({
               tableName: table,
-              columns: columnStructure
+              columns: columnStructure,
             });
           }
         });
       });
     });
 
-    // Wait for all promises to resolve
     Promise.all(tableStructurePromises)
-      .then(tableStructures => {
-        res.json(tableStructures);
+      .then(async (tableStructures) => {
+        try {
+          // Save data to MongoDB
+          await TableStructure.insertMany(tableStructures);
+          res.json({ message: "Data saved to MongoDB", data: tableStructures });
+        } catch (mongoError) {
+          console.error("Error saving to MongoDB:", mongoError);
+          res.status(500).send("Error saving data to MongoDB");
+        }
       })
       .catch(err => {
         console.error('Error:', err);
@@ -1206,6 +1218,158 @@ router.get('/tables-structure', (req, res) => {
       });
   });
 });
+
+
+
+
+
+// create integration credentials api
+router.post("/integrationCredntial",tokenVerification ,async (req,res)=>{
+  try {
+    const {platformName,integrationName,url,username,password} = req.body
+    if(!platformName || !integrationName || !url || !username || !password){
+      res.status(500).json({message:"All fileds are required"})
+    }
+ 
+    const urlRegex = /^jdbc:mysql:\/\/([^:/]+):(\d+)\/(.+)$/;
+    const match = url.match(urlRegex);
+ 
+    if (!match) {
+      return res.status(400).json({ message: "Invalid URL format" });
+    }
+ 
+    const host = match[1]; 
+    const port = match[2]; 
+    const database = match[3]; 
+ 
+    console.log("Parsed MySQL Details:", { host, port, database });
+ 
+    const existingCredential = await integrationCredentials.findOne({
+     url,
+     username,
+     password,
+   });
+ 
+   if (existingCredential) {
+     console.log("Existing credentials found, attempting MySQL connection...");
+ 
+    
+     const pool = mysql.createPool({
+       host,
+       port: parseInt(port), 
+       user: username,
+       password,
+       database,
+     });
+ 
+     pool.query("SHOW TABLES", (err, results) => {
+       if (err) {
+         console.error("Error fetching tables:", err);
+         return res
+           .status(500)
+           .json({ message: "Failed to fetch tables", error: err.message });
+       }
+ 
+       const tableNames = results.map((row) => Object.values(row)[0]);
+       return res
+         .status(200)
+         .json({ message: "Existing credentials found", tables: tableNames });
+     });
+     return;
+   }
+ 
+   const userIdFromToken = req.userIdFromToken;
+ 
+   const user = await User.findById(userIdFromToken);
+   if (!user) {
+     return res.status(404).json({ message: "User not found." });
+   }
+ 
+   const company = user.company;
+   
+ 
+   const inteCredentials = await integrationCredentials.create({
+     companyId:company._id,
+     platformName,
+     integrationName,
+     url,
+     username,
+     password,
+   })
+   
+   res.status(200).json({
+     message: "Credentials saved successfully",
+     inteCredentials,
+   });
+  } catch (error) {
+   console.log("Error in /integrationCredential API:", error.message);
+   res.status(500).json({ message: error.message });
+  }
+ 
+ })
+
+
+
+//  const dbConfig = {
+//   integrationName: 'MySQL',
+//   url: 'jdbc:mysql://66.135.60.203:3308/dbtabib',
+//   username: 'kamran',
+//   password: 'Pma_109c'
+// };
+
+
+// Create the API endpoint
+// router.post('/metaIntegartiondetail', async (req, res) => {
+//   try {
+//     const { tables, integration_id } = req.body;
+
+//     if (!tables || !integration_id) {
+//       return res.status(400).json({ message: 'Tables and integration_id are required.' });
+//     }
+
+//     const connection = mysql.createConnection({
+//       host: '66.135.60.203',
+//       user: dbConfig.username,
+//       password: dbConfig.password,
+//       database: 'dbtabib',
+//     });
+
+//     connection.connect();
+
+//     for (let table of tables) {
+//       const { tableName, description } = table;
+
+//       // Query MySQL to get columns for each table
+//       const [rows] = await connection.promise().query(`DESCRIBE ${tableName}`);
+//       const columns = rows.map(row => row.Field);
+
+//       // Save the data into MongoDB
+//       const tableData = new metaIntegrationDetail({
+//         integration_id,
+//         table_name: tableName,
+//         columns,
+//         description,
+//       });
+
+//       await tableData.save();
+//     }
+
+//     connection.end();
+//     res.status(200).json({ message: 'Data saved successfully' });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Error occurred', error });
+//   }
+// });
+
+
+
+
+
+
+
+
+
 
 
 
