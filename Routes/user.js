@@ -1177,4 +1177,39 @@ router.post("/MetaIntegrationDetails", tokenVerification, async (req, res) => {
   }
 });
 
+
+
+
+
+router.post("/fetchMetaIntegrationDetails",tokenVerification,async(req,res)=>{
+  const userId = req.userIdFromToken
+  console.log("userId-->",userId);
+
+  try {
+    const userData = await User.findById(userId).select("company");
+    const companyId = userData.company;
+    console.log("companyId-->",companyId);
+
+    const integrationCredential = await integrationCredentials.findOne({
+      companyId,
+    });
+    
+    const integrationId = integrationCredential._id;
+    console.log("integrationId-->",integrationId);
+    
+    const metaIntegrationDetails = await MetaIntegrationDetail.find({ integration_id: integrationId });
+
+    res.status(200).json({
+      message: "Meta Integration fetched successfully.",
+      data: metaIntegrationDetails,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+  
+})
+
 module.exports = router;

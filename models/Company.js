@@ -15,13 +15,6 @@ const companySchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
-  integration: {
-    type: {type: String, default:null},
-    url:{type:String, default:null},
-    username: { type: String, default: null }, 
-    password: { type: String, default: null },
-    
-  },
 });
 
 module.exports = mongoose.model("Company", companySchema);
