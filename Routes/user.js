@@ -24,6 +24,19 @@ const TableStructure = require("../models/TableStructure");
 const integrationCredentials = require("../models/IntegrationCredentials");
 const MetaIntegrationDetail = require("../models/MetaIntegrationDetails");
 
+
+
+router.get("/fetchAllTables", async (req, res) => {
+  const tables = await TableStructure.find({}, "tableName")
+  res.json({
+    data : tables.map((table)=>{
+      return table.tableName
+    })
+  })
+})
+
+
+
 router.post("/metaIntegration", async (req, res) => {
   try {
     const { integration_id, apiName, apiStructure } = req.body;
