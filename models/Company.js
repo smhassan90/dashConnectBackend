@@ -27,9 +27,3 @@ const companySchema = new mongoose.Schema({
 module.exports = mongoose.model("Company", companySchema);
 
 
-// integrations: [{
-//   name: {type: String, default: "Acuity"},
-//   username: { type: String, default: null }, 
-//   password: { type: String, default: null }, 
-//   //type? //basic? oath1, oath2
-// }],

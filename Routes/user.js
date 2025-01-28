@@ -1,6 +1,6 @@
 // Routes/user.js
 const express = require("express");
-const multer = require('multer');
+const multer = require("multer");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
@@ -8,30 +8,30 @@ const jwt = require("jsonwebtoken");
 require("dotenv/config");
 const tokenVerification = require("../config/tokenVerification");
 const mongoose = require("mongoose");
-const Company = require("../models/Company"); 
-const randomstring = require('randomstring')
-const sendMail = require('../config/nodemailer')
-const axios = require('axios')
-const cron = require('node-cron')
-const Integration = require('../models/Integration')
-const MasterIntegration = require('../models/MasterIntegration')
-const MetaIntegration = require('../models/Meta_Integration')
-const path = require('path');
-const fs = require('fs');
-const csvParser = require('csv-parser');
-const mysql = require('mysql2');
-const TableStructure = require("../models/TableStructure")
-const integrationCredentials = require("../models/IntegrationCredentials")
-const MetaIntegrationDetail = require("../models/MetaIntegrationDetails")
-const moment = require("moment")
+const Company = require("../models/Company");
+const randomstring = require("randomstring");
+const sendMail = require("../config/nodemailer");
+const axios = require("axios");
+const cron = require("node-cron");
+const Integration = require("../models/Integration");
+const MasterIntegration = require("../models/MasterIntegration");
+const MetaIntegration = require("../models/Meta_Integration");
+const path = require("path");
+const fs = require("fs");
+const csvParser = require("csv-parser");
+const mysql = require("mysql2");
+const TableStructure = require("../models/TableStructure");
+const integrationCredentials = require("../models/IntegrationCredentials");
+const MetaIntegrationDetail = require("../models/MetaIntegrationDetails");
 
-
-
-router.post('/metaIntegration', async (req, res) => {
+router.post("/metaIntegration", async (req, res) => {
   try {
     const { integration_id, apiName, apiStructure } = req.body;
 
-    const apiStructureString = typeof apiStructure === 'string'? apiStructure: JSON.stringify(apiStructure);
+    const apiStructureString =
+      typeof apiStructure === "string"
+        ? apiStructure
+        : JSON.stringify(apiStructure);
     const newMeta = new MetaIntegration({
       integration_id,
       apiName,
@@ -39,29 +39,36 @@ router.post('/metaIntegration', async (req, res) => {
     });
 
     await newMeta.save();
-    res.status(201).send('MetaIntegration saved successfully!');
+    res.status(201).send("MetaIntegration saved successfully!");
   } catch (error) {
-    res.status(500).send('Server Error: ' + error.message);
+    res.status(500).send("Server Error: " + error.message);
   }
 });
 
-
-
-router.post('/masterIntegration', async (req, res) => {
-  const { name } = req.body
+router.post("/masterIntegration", async (req, res) => {
+  const { name } = req.body;
   const newIntegration = new MasterIntegration({ masterintegration: { name } });
   await newIntegration.save();
-  res.status(201).json({ message: 'Created successfully', data: newIntegration });
+  res
+    .status(201)
+    .json({ message: "Created successfully", data: newIntegration });
 });
 
-// --------------------------------       ------------------------------------- //
 
-
+// ------------------------------------------------------------------------------ //
 
 // create --> user API
 router.post("/create", async (req, res) => {
   try {
-    const { companyName,updateDate, Status, firstName, lastName, email, password } = req.body;
+    const {
+      companyName,
+      updateDate,
+      Status,
+      firstName,
+      lastName,
+      email,
+      password,
+    } = req.body;
 
     const company = await Company.create({
       companyName,
@@ -76,7 +83,7 @@ router.post("/create", async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
-      company: company,  
+      company: company,
     });
 
     res.status(201).json({ user });
@@ -85,15 +92,11 @@ router.post("/create", async (req, res) => {
   }
 });
 
-
-
-
-
 // create --> Add employee API
 router.post("/addEmployee", tokenVerification, async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
-    
+
     // Extract ID from token
     const userIdFromToken = req.userIdFromToken;
 
@@ -106,7 +109,6 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
     // Extract company data
     const company = user.company;
 
-   
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ message: "All fields are required." });
     }
@@ -117,16 +119,14 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
       return res.status(409).json({ message: "Email already in use." });
     }
 
-   
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    
     const newUser = await User.create({
       firstName,
       lastName,
       email,
       password: hashedPassword,
-      role: role || "employee", 
+      role: role || "employee",
       company: {
         _id: company._id, // only company id send into the database
         companyName: company.companyName,
@@ -141,10 +141,6 @@ router.post("/addEmployee", tokenVerification, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
- 
-
-
-
 
 // create --> Login API
 router.post("/login", async (req, res) => {
@@ -153,7 +149,7 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user) {
-      const checkPassword = bcrypt.compareSync(password, user.password); 
+      const checkPassword = bcrypt.compareSync(password, user.password);
 
       if (checkPassword) {
         const token = jwt.sign(
@@ -184,103 +180,129 @@ router.post("/login", async (req, res) => {
   }
 });
 
-
-
-
-
 // create --> Update Employee API
-router.put("/updateEmployee/:employeeId", tokenVerification, async (req, res) => {
-  try {
+router.put(
+  "/updateEmployee/:employeeId",
+  tokenVerification,
+  async (req, res) => {
+    try {
       const { firstName, lastName, email, role } = req.body;
-      const { employeeId } = req.params
+      const { employeeId } = req.params;
 
       // Validate the employee ID
       if (!mongoose.isValidObjectId(employeeId)) {
-          return res.status(400).send({ status: 400, message: "Invalid employee ID" });
+        return res
+          .status(400)
+          .send({ status: 400, message: "Invalid employee ID" });
       }
 
       const userIdFromToken = req.userIdFromToken; // Get user id from token
-      const user = await User.findById(userIdFromToken).select('company');
+      const user = await User.findById(userIdFromToken).select("company");
 
       if (!user) {
-          return res.status(404).send({ message: "User not found" });
+        return res.status(404).send({ message: "User not found" });
       }
 
       // Check employee belongs to the logged-in user's company
       const employee = await User.findById(employeeId);
-      if (!employee || employee.company._id.toString() !== user.company._id.toString()) {
-          return res.status(403).send({ message: "You are not authorized to update this employee." });
+      if (
+        !employee ||
+        employee.company._id.toString() !== user.company._id.toString()
+      ) {
+        return res
+          .status(403)
+          .send({ message: "You are not authorized to update this employee." });
       }
 
       // Update the employee details
       const updatedEmployee = await User.findByIdAndUpdate(
-          employeeId,
-          {
-              firstName,
-              lastName,
-              email,
-              role,
-          },
-          { new: true, runValidators: true } // Return the updated document and run validators
+        employeeId,
+        {
+          firstName,
+          lastName,
+          email,
+          role,
+        },
+        { new: true, runValidators: true } // Return the updated document and run validators
       );
 
       if (!updatedEmployee) {
-          return res.status(404).send({ status: 404, message: "Employee not found" });
+        return res
+          .status(404)
+          .send({ status: 404, message: "Employee not found" });
       }
 
-      res.status(200).send({ message: "Employee updated successfully", employee: updatedEmployee });
-  } catch (err) {
+      res
+        .status(200)
+        .send({
+          message: "Employee updated successfully",
+          employee: updatedEmployee,
+        });
+    } catch (err) {
       console.error("Error updating employee", err);
       res.status(500).send({ message: "Error updating employee", error: err });
+    }
   }
-});
+);
 
-
-
-
- 
 // create --> Delete Employee API
-router.delete("/deleteEmployee/:employeeId", tokenVerification, async (req, res) => {
-  try {
-      const { employeeId } = req.params; 
+router.delete(
+  "/deleteEmployee/:employeeId",
+  tokenVerification,
+  async (req, res) => {
+    try {
+      const { employeeId } = req.params;
 
       if (!mongoose.isValidObjectId(employeeId)) {
-          return res.status(400).send({ status: 400, message: "Invalid employee ID" });
+        return res
+          .status(400)
+          .send({ status: 400, message: "Invalid employee ID" });
       }
 
       // add validateion user belong to the same comapny
 
-      const userIdFromToken = req.userIdFromToken; 
-      const user = await User.findById(userIdFromToken).select('company');
+      const userIdFromToken = req.userIdFromToken;
+      const user = await User.findById(userIdFromToken).select("company");
 
       if (!user) {
-          return res.status(404).send({ message: "User not found" });
+        return res.status(404).send({ message: "User not found" });
       }
 
       const employee = await User.findById(employeeId);
-      if (!employee || employee.company._id.toString() !== user.company._id.toString()) {
-          return res.status(403).send({ message: "You are not authorized to delete this employee." });
+      if (
+        !employee ||
+        employee.company._id.toString() !== user.company._id.toString()
+      ) {
+        return res
+          .status(403)
+          .send({ message: "You are not authorized to delete this employee." });
       }
 
       const deletedEmployee = await User.findByIdAndDelete(employeeId);
 
       if (!deletedEmployee) {
-          return res.status(404).send({ status: 404, message: "Employee not found" });
+        return res
+          .status(404)
+          .send({ status: 404, message: "Employee not found" });
       }
 
-      res.status(200).send({ message: "Employee deleted successfully", employee: deletedEmployee });
-  } catch (err) {
+      res
+        .status(200)
+        .send({
+          message: "Employee deleted successfully",
+          employee: deletedEmployee,
+        });
+    } catch (err) {
       console.error("Error deleting employee", err);
       res.status(500).send({ message: "Error deleting employee", error: err });
+    }
   }
-});
- 
-
+);
 
 //  create --> Nuke Users API. It will delete all users from users collection
 router.delete("/nukeUsers", async (req, res) => {
   try {
-    await User.deleteMany({}); 
+    await User.deleteMany({});
 
     res.status(200).json({ message: "All users have been deleted." });
   } catch (error) {
@@ -288,22 +310,16 @@ router.delete("/nukeUsers", async (req, res) => {
   }
 });
 
-
-
 // create --> Nuke Companies API. It will delete all companies from companies collection
 router.delete("/nukeCompanies", async (req, res) => {
   try {
-    await Company.deleteMany({}); 
+    await Company.deleteMany({});
 
     res.status(200).json({ message: "All companies have been deleted." });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
-
-
-
-
 
 // create --> API for fetch all users in the same company
 router.get("/getEmployees", tokenVerification, async (req, res) => {
@@ -328,17 +344,13 @@ router.get("/getEmployees", tokenVerification, async (req, res) => {
   }
 });
 
-
-
-
-
 // create --> Change Password API
 router.put("/changePassword", tokenVerification, async (req, res) => {
   try {
-    const {oldPassword, newPassword } = req.body; 
+    const { oldPassword, newPassword } = req.body;
     const userId = req.userIdFromToken;
-  
-    const user = await User.findById(userId)
+
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).send({ message: "User not found" });
@@ -346,63 +358,71 @@ router.put("/changePassword", tokenVerification, async (req, res) => {
 
     const checkPassword = bcrypt.compareSync(oldPassword, user.password);
 
-    if(!checkPassword) {
+    if (!checkPassword) {
       return res.status(400).send({ message: "Incorrect old password" });
-    } 
+    }
 
-      user.password = bcrypt.hashSync(newPassword, 10); ;
-      await user.save();
-      res.status(200).send({ message: "Password changed successfully" });
-      
+    user.password = bcrypt.hashSync(newPassword, 10);
+    await user.save();
+    res.status(200).send({ message: "Password changed successfully" });
   } catch (error) {
     console.error("Error changing password:", error);
     res.status(500).send({ message: "Internal server error" });
-    }
+  }
 });
-
-
 
 // Upload image API
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    return cb(null,"./uploads");  
+    return cb(null, "./uploads");
   },
   filename: function (req, file, cb) {
-    return cb(null, `${Date.now()}-${file.originalname}`);  
-  }
+    return cb(null, `${Date.now()}-${file.originalname}`);
+  },
 });
 
 const upload = multer({ storage });
 
-router.post("/uploadImage", tokenVerification, upload.single("profileImage"), async (req, res) => {
-  try {
-   
-    const userId = req.userIdFromToken;  
+router.post(
+  "/uploadImage",
+  tokenVerification,
+  upload.single("profileImage"),
+  async (req, res) => {
+    try {
+      const userId = req.userIdFromToken;
 
-    if (!userId) {
-      return res.status(400).json({ message: "User ID is missing." });
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is missing." });
+      }
+
+      const user = await User.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      const imagePath = req.file.path;
+
+      user.profilePicture = imagePath;
+      await user.save();
+
+      res
+        .status(200)
+        .json({
+          message: "Profile picture uploaded successfully.",
+          path: imagePath,
+        });
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+      res
+        .status(500)
+        .json({
+          message: "Error uploading profile picture.",
+          error: error.message,
+        });
     }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
-
-    }
-
-    const imagePath = req.file.path;  
-
-    user.profilePicture = imagePath;  
-    await user.save();  
-
-    res.status(200).json({ message: "Profile picture uploaded successfully.", path: imagePath });
-  } catch (error) {
-    console.error("Error uploading profile picture:", error);
-    res.status(500).json({ message: "Error uploading profile picture.", error: error.message });
   }
-});
-
-
+);
 
 // create --> Forgot password and Reset password API
 router.post("/forgotPassword", async (req, res) => {
@@ -433,22 +453,19 @@ router.post("/forgotPassword", async (req, res) => {
   }
 });
 
-
-
-// create --> reset password API  
+// create --> reset password API
 router.post("/resetPassword", async (req, res) => {
   try {
-    const { password , token } = req.body;  
+    const { password, token } = req.body;
 
     const hashedPassword = bcrypt.hashSync(password, 10);
 
     const user = await User.findOne({ token: token });
 
-    if (user) { 
-
+    if (user) {
       const updateData = await User.findByIdAndUpdate(
         { _id: user._id },
-        { $set: { password: hashedPassword, token: ""} },
+        { $set: { password: hashedPassword, token: "" } },
         { new: true }
       );
       res
@@ -461,8 +478,6 @@ router.post("/resetPassword", async (req, res) => {
     res.status(400).send(error.message);
   }
 });
-
-
 
 // create --> testConnection API
 //   router.post("/testConnection", tokenVerification ,async (req, res) => {
@@ -483,7 +498,7 @@ router.post("/resetPassword", async (req, res) => {
 //       }
 //     );
 //     console.log(response);
-    
+
 //     res.json({
 //       message: "Appointment data fetched successfully",
 //       data: response.data,
@@ -496,31 +511,32 @@ router.post("/resetPassword", async (req, res) => {
 //   }
 // });
 
-
-router.get("/getIntegration",tokenVerification ,async(req,res)=>{
- try {
-  const userIdFromToken = req.userIdFromToken;
-  const user = await User.findById(userIdFromToken).select("company");
-  res.send(user.company)
-  console.log("Fetched User:", user);
- } catch (error) {
-  console.log(error); 
- }
-})
-
-
+router.get("/getIntegration", tokenVerification, async (req, res) => {
+  try {
+    const userIdFromToken = req.userIdFromToken;
+    const user = await User.findById(userIdFromToken).select("company");
+    res.send(user.company);
+    console.log("Fetched User:", user);
+  } catch (error) {
+    console.log(error);
+  }
+});
 
 // create --> Acuity API
 const fetchData = async (userId, apiKey, companyName) => {
   if (!apiKey || !userId) {
-    console.log(`Skipping company '${companyName}' due to missing integration details.`);
+    console.log(
+      `Skipping company '${companyName}' due to missing integration details.`
+    );
     return;
   }
 
   try {
     const company = await Company.findOne({ companyName });
     const metaIntegrations = await MetaIntegration.find({});
-    const apiEndpoints = metaIntegrations.map((integration) => integration.apiName);
+    const apiEndpoints = metaIntegrations.map(
+      (integration) => integration.apiName
+    );
     console.log("Endpoints of api-->", apiEndpoints);
 
     if (!company) {
@@ -529,7 +545,9 @@ const fetchData = async (userId, apiKey, companyName) => {
     }
 
     for (const endpoint of apiEndpoints) {
-      console.log(`Fetching data for endpoint '${endpoint}' for company '${companyName}'...`);
+      console.log(
+        `Fetching data for endpoint '${endpoint}' for company '${companyName}'...`
+      );
 
       // Check the last sync time for the company and endpoint
       const lastSync = await Integration.findOne({
@@ -539,23 +557,31 @@ const fetchData = async (userId, apiKey, companyName) => {
 
       const lastSyncTime = lastSync ? lastSync.lastSyncTime : null; // If no sync, consider it as null
 
-      const response = await axios.get(`https://acuityscheduling.com/api/v1${endpoint}`, {
-        auth: {
-          username: userId,
-          password: apiKey,
-        },
-      });
+      const response = await axios.get(
+        `https://acuityscheduling.com/api/v1${endpoint}`,
+        {
+          auth: {
+            username: userId,
+            password: apiKey,
+          },
+        }
+      );
 
-      console.log(`Data received for '${endpoint}' from company '${companyName}':`, response.data);
+      console.log(
+        `Data received for '${endpoint}' from company '${companyName}':`,
+        response.data
+      );
 
       // Compare last sync time with the data received and only save if there's new or updated data
       const updatedData = response.data.filter((data) => {
-        return !lastSyncTime || new Date(data.updatedAt) > new Date(lastSyncTime);
+        return (
+          !lastSyncTime || new Date(data.updatedAt) > new Date(lastSyncTime)
+        );
       });
 
       // If there is updated data, save it; if not, save an empty array with a "no updated data" message
       const dataToSave = updatedData.length > 0 ? updatedData : [];
-      const message = updatedData.length > 0 ? '' : 'No updated data fetch';
+      const message = updatedData.length > 0 ? "" : "No updated data fetch";
 
       try {
         const newRecord = new Integration({
@@ -564,20 +590,26 @@ const fetchData = async (userId, apiKey, companyName) => {
           data: dataToSave,
           date: new Date(),
           lastSyncTime: new Date(), // Update last sync time after saving
-          message: message,  // Save message when no data is updated
+          message: message, // Save message when no data is updated
         });
         await newRecord.save();
-        console.log(`Data from '${endpoint}' for company '${companyName}' saved successfully!`);
+        console.log(
+          `Data from '${endpoint}' for company '${companyName}' saved successfully!`
+        );
       } catch (saveError) {
-        console.error(`Failed to save data for endpoint '${endpoint}' of company '${companyName}':`, saveError.message);
+        console.error(
+          `Failed to save data for endpoint '${endpoint}' of company '${companyName}':`,
+          saveError.message
+        );
       }
     }
   } catch (apiError) {
-    console.error(`Error during API calls for company '${companyName}':`, apiError.message);
+    console.error(
+      `Error during API calls for company '${companyName}':`,
+      apiError.message
+    );
   }
 };
-
-
 
 cron.schedule("0 0 * * *", async () => {
   console.log("Running scheduled task at:", new Date().toString());
@@ -591,7 +623,9 @@ cron.schedule("0 0 * * *", async () => {
       const { username, password } = integration || {};
 
       if (!username || !password) {
-        console.log(`Skipping company '${companyName}' due to missing integration details.`);
+        console.log(
+          `Skipping company '${companyName}' due to missing integration details.`
+        );
         continue;
       }
 
@@ -604,17 +638,15 @@ cron.schedule("0 0 * * *", async () => {
   }
 });
 
-
-
-
-
-// create --> update integration api
+// create --> update integration api  ...iska ub koi kaam nai filhal
 router.put("/updateIntegration", tokenVerification, async (req, res) => {
-  const { username, password , url , type } = req.body;
+  const { username, password, url, type } = req.body;
 
   // Validate input
   if (!username && !password && !url && !type) {
-    return res.status(400).json({ error: "Username, password , url and type are required." });
+    return res
+      .status(400)
+      .json({ error: "Username, password , url and type are required." });
   }
 
   try {
@@ -624,7 +656,9 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
     // Fetch user to get the associated company ID
     const user = await User.findById(userIdFromToken).select("company");
     if (!user || !user.company) {
-      return res.status(404).json({ error: "User or associated company not found." });
+      return res
+        .status(404)
+        .json({ error: "User or associated company not found." });
     }
 
     const companyId = user.company; // Directly using companyId
@@ -659,9 +693,6 @@ router.put("/updateIntegration", tokenVerification, async (req, res) => {
   }
 });
 
-
-
-
 // create --> disconect integration API
 router.put("/disconnectIntegration", tokenVerification, async (req, res) => {
   try {
@@ -671,12 +702,13 @@ router.put("/disconnectIntegration", tokenVerification, async (req, res) => {
     // Fetch user to get the associated company ID
     const user = await User.findById(userIdFromToken).select("company");
     if (!user || !user.company) {
-      return res.status(404).json({ error: "User or associated company not found." });
+      return res
+        .status(404)
+        .json({ error: "User or associated company not found." });
     }
 
     const companyId = user.company; // Directly using companyId
 
-    
     const company = await Company.findById(companyId);
     if (!company) {
       return res.status(404).json({ error: "Company not found." });
@@ -687,7 +719,9 @@ router.put("/disconnectIntegration", tokenVerification, async (req, res) => {
       company.integration.username = null;
       company.integration.password = null;
     } else {
-      return res.status(400).json({ error: "Integration data not found for the company." });
+      return res
+        .status(400)
+        .json({ error: "Integration data not found for the company." });
     }
 
     await company.save();
@@ -701,21 +735,18 @@ router.put("/disconnectIntegration", tokenVerification, async (req, res) => {
   }
 });
 
-
-
-
 // create --> csv file upload API
-router.get('/createSchema', async (req, res) => {
+router.get("/createSchema", async (req, res) => {
   try {
-    const filePath = path.join(__dirname, 'data', 'sheet1.csv');
-    const rows = []; 
-    // Read and parse CSV 
+    const filePath = path.join(__dirname, "data", "sheet1.csv");
+    const rows = [];
+    // Read and parse CSV
     fs.createReadStream(filePath)
       .pipe(csvParser())
-      .on('data', (row) => rows.push(row))
-      .on('end', async () => {
+      .on("data", (row) => rows.push(row))
+      .on("end", async () => {
         if (rows.length === 0) {
-          return res.status(400).json({ message: 'CSV file is empty!' });
+          return res.status(400).json({ message: "CSV file is empty!" });
         }
 
         // Create schema dynamically from the first row's keys
@@ -726,32 +757,35 @@ router.get('/createSchema', async (req, res) => {
           // Dynamically determine the type based on the data
           const firstValue = rows[0][col];
           if (!isNaN(firstValue)) {
-            schemaDefinition[col] = { type: Number };  // For numeric columns
-          } else if (new Date(firstValue) !== 'Invalid Date' && !isNaN(new Date(firstValue))) {
-            schemaDefinition[col] = { type: Date };  // For date columns
+            schemaDefinition[col] = { type: Number }; // For numeric columns
+          } else if (
+            new Date(firstValue) !== "Invalid Date" &&
+            !isNaN(new Date(firstValue))
+          ) {
+            schemaDefinition[col] = { type: Date }; // For date columns
           } else {
-            schemaDefinition[col] = { type: String };  // Default to string
+            schemaDefinition[col] = { type: String }; // Default to string
           }
         });
 
         // Create the dynamic schema
         const dynamicSchema = new mongoose.Schema(schemaDefinition);
-        const SheetModel = mongoose.model('sheet1', dynamicSchema);
+        const SheetModel = mongoose.model("sheet1", dynamicSchema);
 
         // Insert data into MongoDB
         await SheetModel.insertMany(rows);
 
-        res.status(200).json({ message: 'Schema created and data inserted successfully!' });
+        res
+          .status(200)
+          .json({ message: "Schema created and data inserted successfully!" });
       });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ message: 'Something went wrong', error });
+    console.error("Error:", error);
+    res.status(500).json({ message: "Something went wrong", error });
   }
 });
 
-
-
-
+// create
 router.post("/integration", tokenVerification, async (req, res) => {
   const { apiKey, userId } = req.body;
 
@@ -770,426 +804,153 @@ router.post("/integration", tokenVerification, async (req, res) => {
   }
 });
 
-
-
-
-
-
 // create -> append question API
-router.post("/appendQuestion", tokenVerification,async (req, res) => {
+router.post("/appendQuestion", tokenVerification, async (req, res) => {
   const { question } = req.body;
 
   // empty validation
   if (!question || typeof question !== "string") {
-    return res.status(400).json({ error: "Invalid or missing question string." });
+    return res
+      .status(400)
+      .json({ error: "Invalid or missing question string." });
   }
 
   try {
     const metaIntegrations = await MetaIntegration.find({});
 
-    let combinedString = question; 
+    let combinedString = question;
     metaIntegrations.forEach((integration) => {
       combinedString += `\nAPI Name: ${integration.apiName}\nAPI Structure: ${integration.apiStructure}\n`;
     });
 
     console.log("Combined String:\n", combinedString);
 
-    res.status(200).json({ message: "String appended successfully", combinedString });
+    res
+      .status(200)
+      .json({ message: "String appended successfully", combinedString });
   } catch (error) {
     console.error("Error while appending question:", error.message);
-    res.status(500).json({ error: "An error occurred while processing your request." });
+    res
+      .status(500)
+      .json({ error: "An error occurred while processing your request." });
   }
 });
-
 
 // Function to test the MySQL database connection
 async function testDbConnection(username, password, url) {
   const match = url.match(/jdbc:mysql:\/\/(.*):(\d+)\/(.*)/);
   if (!match) {
-      throw new Error('Invalid MySQL URL format');
+    throw new Error("Invalid MySQL URL format");
   }
 
   const [_, host, port, dbname] = match;
   return new Promise((resolve, reject) => {
-    console.log('host', host);
-    console.log('username', username);
-    console.log('port', port);
-    console.log('password', password);
-    console.log('dbname', dbname);
+    console.log("host", host);
+    console.log("username", username);
+    console.log("port", port);
+    console.log("password", password);
+    console.log("dbname", dbname);
     const connection = mysql.createConnection({
-        host: host,
-        user: username,
-        password: password,
-        database: dbname,
-        port: parseInt(port, 10),
+      host: host,
+      user: username,
+      password: password,
+      database: dbname,
+      port: parseInt(port, 10),
     });
 
     connection.connect((err) => {
-        if (err) {
-            console.error('Connection error:', err.message);
-            resolve(false); // Resolve with false on failure
-        } else {
-            console.log('MySQL connection successful');
-            resolve(true); // Resolve with true on success
-        }
-        connection.end(); // Always close the connection
+      if (err) {
+        console.error("Connection error:", err.message);
+        resolve(false); // Resolve with false on failure
+      } else {
+        console.log("MySQL connection successful");
+        resolve(true); // Resolve with true on success
+      }
+      connection.end(); // Always close the connection
     });
-});
+  });
 }
 
 // API endpoint to test the connection
-router.post('/testConnectionIntegration', async (req, res) => {
+router.post("/testConnectionIntegration", async (req, res) => {
   const { username, password, url, type } = req.body;
 
   if (!type) {
-      return res.status(400).json({ error: 'Connection type is required' });
+    return res.status(400).json({ error: "Connection type is required" });
   }
 
   if (!username || !password || !url) {
-      return res.status(400).json({ error: 'Missing required fields: username, password, or url' });
+    return res
+      .status(400)
+      .json({ error: "Missing required fields: username, password, or url" });
   }
 
-  if (type === 'mySQL') {
-      try {
-          const isConnected = await testDbConnection(username, password, url);
+  if (type === "mySQL") {
+    try {
+      const isConnected = await testDbConnection(username, password, url);
 
-          if (isConnected) {
-              return res.status(200).json({ status: 'success', message: 'MySQL connection successful' });
-          } else {
-              return res.status(500).json({ status: 'failure', message: 'MySQL connection failed' });
-          }
-      } catch (error) {
-          return res.status(400).json({ error: error.message });
+      if (isConnected) {
+        return res
+          .status(200)
+          .json({ status: "success", message: "MySQL connection successful" });
+      } else {
+        return res
+          .status(500)
+          .json({ status: "failure", message: "MySQL connection failed" });
       }
-  } else if (type === 'acuity') {
-      try {
-          const response = await axios.get(`${url}/appointments?max=30`, {
-              auth: {
-                  username: username,
-                  password: password,
-              },
-          });
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  } else if (type === "acuity") {
+    try {
+      const response = await axios.get(`${url}/appointments?max=30`, {
+        auth: {
+          username: username,
+          password: password,
+        },
+      });
 
-          return res.json({
-              message: 'Acuity connection successful, appointment data fetched',
-              data: response.data,
-          });
-      } catch (error) {
-          console.error('Error fetching Acuity appointments:', error.message);
-          return res.status(500).json({ error: 'Failed to fetch appointments from Acuity API' });
-      }
+      return res.json({
+        message: "Acuity connection successful, appointment data fetched",
+        data: response.data,
+      });
+    } catch (error) {
+      console.error("Error fetching Acuity appointments:", error.message);
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch appointments from Acuity API" });
+    }
   } else {
-      return res.status(400).json({ error: 'Invalid connection type' });
+    return res.status(400).json({ error: "Invalid connection type" });
   }
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// API route to handle dynamic requests based on frontend message
-// router.post('/summaryOfAppoinments', async (req, res) => {
-//   const { userQuestion } = req.body; // Get user question from the request body
-
-//   // Validate the user question
-//   if (!userQuestion || !userQuestion.toLowerCase().includes("summary of appointments")) {
-//     return res.status(400).json({ message: 'Invalid question format' });
-//   }
-
-//   try {
-//     // Fetch only data related to '/appointments' from Integration collection
-//     const appointmentsData = await Integration.find({ apiName: '/appointments' });
-
-//     if (appointmentsData.length === 0) {
-//       return res.status(404).json({ message: "No appointment data found" });
-//     }
-
-//     // Initialize the result structure
-//     const result = {
-//       labels: [], // Dates
-//       totalAppointments: [], // Count of total appointments per day
-//       totalPaidAppointments: [], // Count of paid appointments per day
-//       totalRevenue: [], // Sum of revenue per day
-//     };
-
-//     // Process each item in the appointmentsData array
-//     appointmentsData.forEach((appointmentData) => {
-//       const { data } = appointmentData; // Assuming 'data' is an array
-
-//       data.forEach((item) => {
-//         const date = item.date;
-
-//         // Check if the date exists and is a valid string
-//         if (date && typeof date === 'string') {
-//           const appointmentDate = date.split(' ')[0]; // Extract date in YYYY-MM-DD format
-
-//           // Check if the date already exists in the result
-//           if (!result.labels.includes(appointmentDate)) {
-//             result.labels.push(appointmentDate);
-//             result.totalAppointments.push(0);
-//             result.totalPaidAppointments.push(0);
-//             result.totalRevenue.push(0);
-//           }
-
-//           // Find the index of the current date in labels
-//           const index = result.labels.indexOf(appointmentDate);
-
-//           // Increment total appointments
-//           result.totalAppointments[index]++;
-
-//           // Increment paid appointments and total revenue if the appointment is paid
-//           if (item.paid === 'yes') {
-//             result.totalPaidAppointments[index]++;
-//             result.totalRevenue[index] += parseFloat(item.price || 0); // Ensure price is parsed as a number
-//           }
-//         }
-//       });
-//     });
-
-//     // Send the result as a JSON response
-//     return res.status(200).json(result);
-
-//   } catch (error) {
-//     console.error('Error fetching appointment summary:', error.message);
-//     return res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
-
-
-
-
-
-// router.post('/monthlyProgress', async (req, res) => {
-//   const { question } = req.body; // Get user question from the request body
-
-//   // Validate the user question (Check if the question includes "monthly progress")
-//   if (!question || !question.toLowerCase().includes("monthly progress")) {
-//     return res.status(400).json({ message: 'Invalid question format' });
-//   }
-
-//   try {
-//     // Fetch relevant data from the Integration collection
-//     const progressData = await Integration.find({ apiName: '/appointments' });
-
-//     if (!progressData.length) {
-//       return res.status(404).json({ message: 'No progress data found' });
-//     }
-
-//     // Structure for storing monthly progress summary
-//     const result = {
-//       labels: [], // List of months
-//       completedTasks: [], // Tasks completed each month
-//       pendingTasks: [], // Pending tasks for each month
-//       totalHours: [], // Total hours spent each month
-//     };
-
-//     // Process each progress data entry
-//     progressData.forEach((entry) => {
-//       const { data } = entry; // Assuming 'data' contains progress details as an array
-
-//       data.forEach((item) => {
-//         const date = item.date; // Example: '2024-12-11'
-//         if (date && typeof date === 'string') {
-//           const month = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
-
-//           // Check if this month is already processed
-//           if (!result.labels.includes(month)) {
-//             result.labels.push(month);
-//             result.completedTasks.push(0);
-//             result.pendingTasks.push(0);
-//             result.totalHours.push(0);
-//           }
-
-//           // Get the index of the month
-//           const index = result.labels.indexOf(month);
-
-//           // Update completed tasks, pending tasks, and hours
-//           result.completedTasks[index] += item.completed ? 1 : 0;
-//           result.pendingTasks[index] += item.pending ? 1 : 0;
-//           result.totalHours[index] += parseFloat(item.hours || 0); // Ensure hours is a number
-//         }
-//       });
-//     });
-
-//     // Return the processed result
-//     return res.status(200).json(result);
-//   } catch (error) {
-//     console.error('Error fetching monthly progress:', error.message);
-//     return res.status(500).json({ message: 'Internal server error', details: error.message });
-//   }
-// });
-
-
-
-// router.post('/monthlyTasks', async (req, res) => {
-//   const { question } = req.body; // Get user question from the request body
-  
-//   // Remove validation logic (to handle more general queries)
-//   try {
-//     // Get the current month and year for filtering
-//     const currentMonth = new Date().getMonth(); // Current month (0-11)
-//     const currentYear = new Date().getFullYear(); // Current year
-
-//     // Get the user ID from the token (assuming user info is available)
-//     const userIdFromToken = req.userIdFromToken;
-
-//     // Fetch relevant data from the Integration collection (appointments data)
-//     const appointmentsData = await Integration.find({
-//       apiName: '/appointments',
-//       userId: userIdFromToken, // Assuming userId is part of the document
-//     });
-
-//     if (appointmentsData.length === 0) {
-//       return res.status(404).json({ message: 'No appointments data found for this user' });
-//     }
-
-//     // Structure for storing monthly progress summary
-//     const result = {
-//       month: `${currentYear}-${currentMonth + 1}`, // Format YYYY-MM
-//       tasksCompleted: 0, // Number of completed tasks
-//     };
-
-//     // Process each appointment data entry
-//     appointmentsData.forEach((appointmentData) => {
-//       const { data } = appointmentData; // Assuming 'data' contains the appointment details
-
-//       data.forEach((item) => {
-//         const date = item.date; // Example: '2024-12-11'
-        
-//         if (date && typeof date === 'string') {
-//           const appointmentMonth = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
-
-//           // Check if this is the current month
-//           if (appointmentMonth === result.month) {
-//             // Count the completed tasks (appointments)
-//             if (item.completed) {
-//               result.tasksCompleted += 1;
-//             }
-//           }
-//         }
-//       });
-//     });
-
-//     // Return the processed result
-//     return res.status(200).json(result);
-
-//   } catch (error) {
-//     console.error('Error fetching monthly progress:', error.message);
-//     return res.status(500).json({ message: 'Internal server error', details: error.message });
-//   }
-// });
-
-
-
-
-// router.post('/taskSummary', async (req, res) => {
-//   const { question } = req.body; // Get user question from the request body
-  
-//   // Check if the question contains keywords related to tasks summary
-//   if (!question || !(question.toLowerCase().includes("task") && question.toLowerCase().includes("summary"))) {
-//     return res.status(400).json({ message: 'Invalid question format' });
-//   }
-
-//   try {
-//     // Get the user ID from the token (assuming user info is available)
-//     const userIdFromToken = req.userIdFromToken;
-
-//     // Fetch relevant data from the Integration collection (appointments data)
-//     const appointmentsData = await Integration.find({
-//       apiName: '/appointments',
-//       userId: userIdFromToken, // Assuming userId is part of the document
-//     });
-
-//     if (appointmentsData.length === 0) {
-//       return res.status(404).json({ message: 'No appointment data found for this user' });
-//     }
-
-//     // Structure for storing the task summary
-//     const result = {
-//       labels: [], // List of months (e.g., '2024-12')
-//       completedTasks: [], // Completed tasks count for each month
-//     };
-
-//     // Process each appointment data entry
-//     appointmentsData.forEach((appointmentData) => {
-//       const { data } = appointmentData; // Assuming 'data' contains the task details
-
-//       data.forEach((item) => {
-//         const date = item.date; // Example: '2024-12-11'
-        
-//         if (date && typeof date === 'string') {
-//           const taskMonth = date.split('-').slice(0, 2).join('-'); // Extract YYYY-MM format
-
-//           // Check if this month is already in the result
-//           if (!result.labels.includes(taskMonth)) {
-//             result.labels.push(taskMonth);
-//             result.completedTasks.push(0);
-//           }
-
-//           // Get the index of the month
-//           const index = result.labels.indexOf(taskMonth);
-
-//           // If the task is completed, increment the completed tasks count for that month
-//           if (item.completed) {
-//             result.completedTasks[index] += 1;
-//           }
-//         }
-//       });
-//     });
-
-//     // Send the task summary as a response
-//     return res.status(200).json({
-//       message: 'Task summary retrieved successfully.',
-//       totalCompletedTasks: result.completedTasks.reduce((acc, curr) => acc + curr, 0), // Sum up all completed tasks
-//       details: result,
-//     });
-
-//   } catch (error) {
-//     console.error('Error fetching task summary:', error.message);
-//     return res.status(500).json({ message: 'Internal server error', details: error.message });
-//   }
-// });
-
-
-
-////////////////////////////////////////////////
-
-const pool = mysql.createPool({
-  host: '66.135.60.203',
+// create table-structure api
+const poolOne = mysql.createPool({
+  host: "66.135.60.203",
   port: 3308,
-  user: 'kamran',
-  password: 'Pma_109c',
-  database: 'dbtabib',
+  user: "kamran",
+  password: "Pma_109c",
+  database: "dbtabib",
 });
 
-// Fetch MySQL data and save to MongoDB
-router.get('/tables-structure', (req, res) => {
-  pool.query('SHOW TABLES', (err, results) => {
+router.get("/tables-structure", (req, res) => {
+  poolOne.query("SHOW TABLES", (err, results) => {
     if (err) {
-      console.error('Error fetching tables:', err);
-      res.status(500).send('Error retrieving tables');
+      console.error("Error fetching tables:", err);
+      res.status(500).send("Error retrieving tables");
       return;
     }
 
-    const tableNames = results.map(row => row['Tables_in_dbtabib']);
-    const tableStructurePromises = tableNames.map(table => {
+    const tableNames = results.map((row) => row["Tables_in_dbtabib"]);
+    const tableStructurePromises = tableNames.map((table) => {
       return new Promise((resolve, reject) => {
-        pool.query(`DESCRIBE ${table}`, (err, columns) => {
+        poolOne.query(`DESCRIBE ${table}`, (err, columns) => {
           if (err) {
             reject(`Error describing table ${table}: ${err}`);
           } else {
             const columnStructure = {};
-            columns.forEach(column => {
+            columns.forEach((column) => {
               columnStructure[column.Field] = column.Type;
             });
             resolve({
@@ -1212,165 +973,208 @@ router.get('/tables-structure', (req, res) => {
           res.status(500).send("Error saving data to MongoDB");
         }
       })
-      .catch(err => {
-        console.error('Error:', err);
-        res.status(500).send('Error retrieving table structure');
+      .catch((err) => {
+        console.error("Error:", err);
+        res.status(500).send("Error retrieving table structure");
       });
   });
 });
 
-
-
-
-
 // create integration credentials api
-router.post("/integrationCredntial",tokenVerification ,async (req,res)=>{
+router.post("/integrationCredntial", tokenVerification, async (req, res) => {
   try {
-    const {platformName,integrationName,url,username,password} = req.body
-    if(!platformName || !integrationName || !url || !username || !password){
-      res.status(500).json({message:"All fileds are required"})
+    const { platformName, integrationName, url, username, password } = req.body;
+    if (!platformName || !integrationName || !url || !username || !password) {
+      res.status(500).json({ message: "All fileds are required" });
     }
- 
+
     const urlRegex = /^jdbc:mysql:\/\/([^:/]+):(\d+)\/(.+)$/;
     const match = url.match(urlRegex);
- 
+
     if (!match) {
       return res.status(400).json({ message: "Invalid URL format" });
     }
- 
-    const host = match[1]; 
-    const port = match[2]; 
-    const database = match[3]; 
- 
+
+    const host = match[1];
+    const port = match[2];
+    const database = match[3];
+
     console.log("Parsed MySQL Details:", { host, port, database });
- 
+
     const existingCredential = await integrationCredentials.findOne({
-     url,
-     username,
-     password,
-   });
- 
-   if (existingCredential) {
-     console.log("Existing credentials found, attempting MySQL connection...");
- 
-    
-     const pool = mysql.createPool({
-       host,
-       port: parseInt(port), 
-       user: username,
-       password,
-       database,
-     });
- 
-     pool.query("SHOW TABLES", (err, results) => {
-       if (err) {
-         console.error("Error fetching tables:", err);
-         return res
-           .status(500)
-           .json({ message: "Failed to fetch tables", error: err.message });
-       }
- 
-       const tableNames = results.map((row) => Object.values(row)[0]);
-       return res
-         .status(200)
-         .json({ message: "Existing credentials found", tables: tableNames });
-     });
-     return;
-   }
- 
-   const userIdFromToken = req.userIdFromToken;
- 
-   const user = await User.findById(userIdFromToken);
-   if (!user) {
-     return res.status(404).json({ message: "User not found." });
-   }
- 
-   const company = user.company;
-   
- 
-   const inteCredentials = await integrationCredentials.create({
-     companyId:company._id,
-     platformName,
-     integrationName,
-     url,
-     username,
-     password,
-   })
-   
-   res.status(200).json({
-     message: "Credentials saved successfully",
-     inteCredentials,
-   });
+      url,
+      username,
+      password,
+    });
+
+    if (existingCredential) {
+      console.log("Existing credentials found, attempting MySQL connection...");
+
+      const pool = mysql.createPool({
+        host,
+        port: parseInt(port),
+        user: username,
+        password,
+        database,
+      });
+
+      pool.query("SHOW TABLES", (err, results) => {
+        if (err) {
+          console.error("Error fetching tables:", err);
+          return res
+            .status(500)
+            .json({ message: "Failed to fetch tables", error: err.message });
+        }
+
+        const tableNames = results.map((row) => Object.values(row)[0]);
+        return res
+          .status(200)
+          .json({ message: "Existing credentials found", tables: tableNames });
+      });
+      return;
+    }
+
+    const userIdFromToken = req.userIdFromToken;
+
+    const user = await User.findById(userIdFromToken);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const company = user.company;
+
+    const inteCredentials = await integrationCredentials.create({
+      companyId: company._id,
+      platformName,
+      integrationName,
+      url,
+      username,
+      password,
+    });
+
+    res.status(200).json({
+      message: "Credentials saved successfully",
+      inteCredentials,
+    });
   } catch (error) {
-   console.log("Error in /integrationCredential API:", error.message);
-   res.status(500).json({ message: error.message });
+    console.log("Error in /integrationCredential API:", error.message);
+    res.status(500).json({ message: error.message });
   }
- 
- })
+});
 
+// create Meta integration detalis API
+const pool = mysql
+  .createPool({
+    host: "66.135.60.203",
+    port: 3308,
+    user: "kamran",
+    password: "Pma_109c",
+    database: "dbtabib",
+  })
+  .promise();
 
+router.post("/MetaIntegrationDetails", tokenVerification, async (req, res) => {
+  const { tables } = req.body;
 
-//  const dbConfig = {
-//   integrationName: 'MySQL',
-//   url: 'jdbc:mysql://66.135.60.203:3308/dbtabib',
-//   username: 'kamran',
-//   password: 'Pma_109c'
-// };
+  const userIdFromToken = req.userIdFromToken;
 
+  if (!userIdFromToken) {
+    return res.status(401).json({ message: "User not authenticated." });
+  }
 
-// Create the API endpoint
-// router.post('/metaIntegartiondetail', async (req, res) => {
-//   try {
-//     const { tables, integration_id } = req.body;
+  try {
+    // Fetch the user data using userId
+    const userData = await User.findById(userIdFromToken).select("company");
+    if (!userData) {
+      return res.status(404).json({ message: "User not found." });
+    }
 
-//     if (!tables || !integration_id) {
-//       return res.status(400).json({ message: 'Tables and integration_id are required.' });
-//     }
+    const companyId = userData.company;
 
-//     const connection = mysql.createConnection({
-//       host: '66.135.60.203',
-//       user: dbConfig.username,
-//       password: dbConfig.password,
-//       database: 'dbtabib',
-//     });
+    // Fetch the integration credential by companyId
+    const integrationCredential = await integrationCredentials.findOne({
+      companyId,
+    });
+    if (!integrationCredential) {
+      return res
+        .status(404)
+        .json({
+          message: "No integration credentials found for this company.",
+        });
+    }
 
-//     connection.connect();
+    const integration_id = integrationCredential._id; //  MongoDB ID for the integrationCredential
 
-//     for (let table of tables) {
-//       const { tableName, description } = table;
+    if (!tables || !Array.isArray(tables)) {
+      return res.status(400).json({ message: "Tables array is required." });
+    }
 
-//       // Query MySQL to get columns for each table
-//       const [rows] = await connection.promise().query(`DESCRIBE ${tableName}`);
-//       const columns = rows.map(row => row.Field);
+    let responseData = [];
 
-//       // Save the data into MongoDB
-//       const tableData = new metaIntegrationDetail({
-//         integration_id,
-//         table_name: tableName,
-//         columns,
-//         description,
-//       });
+    // Process each table and save metadata
+    for (const table of tables) {
+      const { tableName, description } = table;
 
-//       await tableData.save();
-//     }
+      if (!tableName || !description) {
+        responseData.push({
+          tableName: tableName || "N/A",
+          message: "Table name or description is missing.",
+        });
+        continue;
+      }
 
-//     connection.end();
-//     res.status(200).json({ message: 'Data saved successfully' });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: 'Error occurred', error });
-//   }
-// });
+      // Check if table exists
+      const [tableExists] = await pool.query("SHOW TABLES LIKE ?", [tableName]);
+      if (tableExists.length === 0) {
+        responseData.push({
+          tableName,
+          message: `Table ${tableName} does not exist.`,
+        });
+        continue;
+      }
 
+      // Fetch column details of the table
+      const [columns] = await pool.query("DESCRIBE ??", [tableName]);
+      const columnDetails = {};
+      columns.forEach((col) => {
+        columnDetails[col.Field] = col.Type;
+      });
 
+      // Save metadata into MongoDB
+      const metaDetails = new MetaIntegrationDetail({
+        integration_id,
+        table_name: tableName,
+        columns: columnDetails, // Save columns as an object
+        description,
+      });
 
+      try {
+        await metaDetails.save();
+        responseData.push({
+          tableName,
+          message: `Metadata for ${tableName} saved successfully.`,
+        });
+      } catch (err) {
+        responseData.push({
+          tableName,
+          message: `Failed to save metadata for ${tableName}.`,
+          error: err.message,
+        });
+      }
+    }
 
-
-
-
-
-
-
-
+    // Final Response
+    res.status(200).json({
+      message: "Processing completed",
+      data: responseData,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "An error occurred while processing.",
+      error: err.message,
+    });
+  }
+});
 
 module.exports = router;
