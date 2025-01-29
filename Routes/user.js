@@ -21,7 +21,7 @@ const fs = require("fs");
 const csvParser = require("csv-parser");
 const mysql = require("mysql2");
 const TableStructure = require("../models/TableStructure");
-const integrationCredentials = require("../models/IntegrationCredentials");
+const IntegrationCredentials = require("../models/IntegrationCredentials");
 const MetaIntegrationDetail = require("../models/MetaIntegrationDetails");
 
 
@@ -1224,5 +1224,195 @@ router.post("/fetchMetaIntegrationDetails",tokenVerification,async(req,res)=>{
   }
   
 })
+
+
+
+
+//
+router.post("/appendQuestionWithMeta", tokenVerification,async (req, res) => {
+  const { userText } = req.body; 
+  const userId = req.userIdFromToken; 
+
+  try {
+  
+    const user = await User.findById(userId).select("company"); 
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
+
+    const companyId = user.company; 
+    
+    if (!companyId) {
+      return res.status(400).send("Company ID not found.");
+    }
+
+
+    // Step 2: Find the integration credentials using companyId
+    const integrationCredentials = await IntegrationCredentials.findOne({ companyId });
+
+    if (!integrationCredentials) {
+      return res.status(404).send("Integration credentials not found.");
+    }
+
+    // Step 3: Fetch Meta Integration details using integration ID
+    const metaIntegrationData = await MetaIntegrationDetail.find({ integration_id: integrationCredentials._id });
+
+    if (!metaIntegrationData.length) {
+      return res.status(404).send("Meta integration data not found.");
+    }
+
+    // Step 4: Create the final result message
+    let resultMessage = `User Text: ${userText}`;
+
+    metaIntegrationData.forEach((table) => {
+      let responseMessage = `Here is all the data of Table: ${table.table_name}`;
+      resultMessage += `${responseMessage}| Integration ID: ${table.integration_id} | Columns: ${JSON.stringify(table.columns)} | Description: ${table.description} | Update Date: ${table.updateDate}`;
+    });
+
+ 
+    console.log(resultMessage);
+
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    res.status(500).send("Server Error");
+  }
+});
+
+
+
+
+
+// 
+
+const poolTwo = mysql.createPool({
+  host: "66.135.60.203",
+  port: 3308,
+  user: "kamran",
+  password: "Pma_109c",
+  database: "dbtabib",
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+// API endpoint for Revenue Trends per Clinic
+router.get('/revenuetrends', (req, res) => {
+  // SQL query to get the revenue trends per clinic (monthly)
+  const query = `
+    SELECT
+        c.NAME AS Clinic_Name,
+        DATE_FORMAT(a.VISIT_DATE, '%Y-%m') AS Month,
+        SUM(a.charges) AS Total_Revenue
+    FROM
+        t_appointment a
+    JOIN
+        t_doctor_clinic dc ON a.DOCTOR_ID = dc.DOCTOR_ID
+    JOIN
+        t_clinic c ON dc.CLINIC_ID = c.ID
+    WHERE
+        a.status = 1  -- Assuming 1 means completed/confirmed appointments
+    GROUP BY
+        c.NAME,
+        DATE_FORMAT(a.VISIT_DATE, '%Y-%m')
+    ORDER BY
+        Month DESC,
+        c.NAME;
+  `;
+
+  // Execute the query
+  poolTwo.query(query, (error, results) => {
+    if (error) {
+      console.error('Error fetching data:', error);
+      return res.status(500).json({ error: 'Database query failed' });
+    }
+    // Return the results as JSON
+    return res.json(results);
+  });
+});
+
+
+
+router.get('/doctorPerformance', (req, res) => {
+  // SQL query to get the doctor performance (appointments vs. feedback ratings)
+  const query = `
+    SELECT
+        d.NAME AS Doctor_Name,
+        COUNT(a.id) AS Total_Appointments,
+        AVG(f.RATING) AS Average_Feedback_Rating
+    FROM
+        t_appointment a
+    JOIN
+        t_doctor d ON a.DOCTOR_ID = d.ID
+    LEFT JOIN
+        t_feedback f ON a.PATIENT_ID = f.PATIENT_ID AND a.DOCTOR_ID = f.DOCTOR_ID
+    WHERE
+        a.status = 1  -- Assuming 1 means completed/confirmed appointments
+    GROUP BY
+        d.NAME
+    ORDER BY
+        Total_Appointments DESC;
+  `;
+
+  // Execute the query
+  poolTwo.query(query, (error, results) => {
+    if (error) {
+      console.error('Error fetching data:', error);
+      return res.status(500).json({ error: 'Database query failed' });
+    }
+    // Return the results as JSON
+    return res.json(results);
+  });
+});
+
+
+
+router.get('/patientDemographics', (req, res) => {
+  // SQL query to get patient demographics and growth (age and gender groups)
+  const query = `
+    SELECT
+        DATE_FORMAT(a.VISIT_DATE, '%Y-%m') AS Month,
+        p.GENDER AS Gender,
+        CASE
+            WHEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(p.DOB, '%Y-%m-%d'), CURDATE()) BETWEEN 0 AND 18 THEN '0-18'
+            WHEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(p.DOB, '%Y-%m-%d'), CURDATE()) BETWEEN 19 AND 30 THEN '19-30'
+            WHEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(p.DOB, '%Y-%m-%d'), CURDATE()) BETWEEN 31 AND 45 THEN '31-45'
+            WHEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(p.DOB, '%Y-%m-%d'), CURDATE()) BETWEEN 46 AND 60 THEN '46-60'
+            WHEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(p.DOB, '%Y-%m-%d'), CURDATE()) > 60 THEN '60+'
+        END AS Age_Group,
+        COUNT(DISTINCT p.id) AS Total_Patients
+    FROM
+        t_appointment a
+    JOIN
+        t_patient p ON a.PATIENT_ID = p.id
+    WHERE
+        a.status = 1  -- Assuming 1 means completed/confirmed appointments
+    GROUP BY
+        Month, p.GENDER, Age_Group
+    ORDER BY
+        Month DESC, Age_Group;
+  `;
+
+  // Execute the query
+  poolTwo.query(query, (error, results) => {
+    if (error) {
+      console.error('Error fetching data:', error);
+      return res.status(500).json({ error: 'Database query failed' });
+    }
+    // Return the results as JSON
+    return res.json(results);
+  });
+});
+
+
+
+
+
+router.post("/appendQuestion",(req,res)=>{
+
+})
+
+
+
+
 
 module.exports = router;
