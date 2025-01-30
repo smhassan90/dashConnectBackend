@@ -23,19 +23,16 @@ const mysql = require("mysql2");
 const TableStructure = require("../models/TableStructure");
 const IntegrationCredentials = require("../models/IntegrationCredentials");
 const MetaIntegrationDetail = require("../models/MetaIntegrationDetails");
-
-
+const {Configuration,OpenAIApi} = require("openai")
 
 router.get("/fetchAllTables", async (req, res) => {
-  const tables = await TableStructure.find({}, "tableName")
+  const tables = await TableStructure.find({}, "tableName");
   res.json({
-    data : tables.map((table)=>{
-      return table.tableName
-    })
-  })
-})
-
-
+    data: tables.map((table) => {
+      return table.tableName;
+    }),
+  });
+});
 
 router.post("/metaIntegration", async (req, res) => {
   try {
@@ -66,7 +63,6 @@ router.post("/masterIntegration", async (req, res) => {
     .status(201)
     .json({ message: "Created successfully", data: newIntegration });
 });
-
 
 // ------------------------------------------------------------------------------ //
 
@@ -245,12 +241,10 @@ router.put(
           .send({ status: 404, message: "Employee not found" });
       }
 
-      res
-        .status(200)
-        .send({
-          message: "Employee updated successfully",
-          employee: updatedEmployee,
-        });
+      res.status(200).send({
+        message: "Employee updated successfully",
+        employee: updatedEmployee,
+      });
     } catch (err) {
       console.error("Error updating employee", err);
       res.status(500).send({ message: "Error updating employee", error: err });
@@ -299,12 +293,10 @@ router.delete(
           .send({ status: 404, message: "Employee not found" });
       }
 
-      res
-        .status(200)
-        .send({
-          message: "Employee deleted successfully",
-          employee: deletedEmployee,
-        });
+      res.status(200).send({
+        message: "Employee deleted successfully",
+        employee: deletedEmployee,
+      });
     } catch (err) {
       console.error("Error deleting employee", err);
       res.status(500).send({ message: "Error deleting employee", error: err });
@@ -419,20 +411,16 @@ router.post(
       user.profilePicture = imagePath;
       await user.save();
 
-      res
-        .status(200)
-        .json({
-          message: "Profile picture uploaded successfully.",
-          path: imagePath,
-        });
+      res.status(200).json({
+        message: "Profile picture uploaded successfully.",
+        path: imagePath,
+      });
     } catch (error) {
       console.error("Error uploading profile picture:", error);
-      res
-        .status(500)
-        .json({
-          message: "Error uploading profile picture.",
-          error: error.message,
-        });
+      res.status(500).json({
+        message: "Error uploading profile picture.",
+        error: error.message,
+      });
     }
   }
 );
@@ -1109,11 +1097,9 @@ router.post("/MetaIntegrationDetails", tokenVerification, async (req, res) => {
       companyId,
     });
     if (!integrationCredential) {
-      return res
-        .status(404)
-        .json({
-          message: "No integration credentials found for this company.",
-        });
+      return res.status(404).json({
+        message: "No integration credentials found for this company.",
+      });
     }
 
     const integration_id = integrationCredential._id; //  MongoDB ID for the integrationCredential
@@ -1190,72 +1176,72 @@ router.post("/MetaIntegrationDetails", tokenVerification, async (req, res) => {
   }
 });
 
+router.post(
+  "/fetchMetaIntegrationDetails",
+  tokenVerification,
+  async (req, res) => {
+    const userId = req.userIdFromToken;
+    console.log("userId-->", userId);
 
+    try {
+      const userData = await User.findById(userId).select("company");
+      const companyId = userData.company;
+      console.log("companyId-->", companyId);
 
+      const integrationCredential = await integrationCredentials.findOne({
+        companyId,
+      });
 
+      const integrationId = integrationCredential._id;
+      console.log("integrationId-->", integrationId);
 
-router.post("/fetchMetaIntegrationDetails",tokenVerification,async(req,res)=>{
-  const userId = req.userIdFromToken
-  console.log("userId-->",userId);
+      const metaIntegrationDetails = await MetaIntegrationDetail.find({
+        integration_id: integrationId,
+      });
 
-  try {
-    const userData = await User.findById(userId).select("company");
-    const companyId = userData.company;
-    console.log("companyId-->",companyId);
-
-    const integrationCredential = await integrationCredentials.findOne({
-      companyId,
-    });
-    
-    const integrationId = integrationCredential._id;
-    console.log("integrationId-->",integrationId);
-    
-    const metaIntegrationDetails = await MetaIntegrationDetail.find({ integration_id: integrationId });
-
-    res.status(200).json({
-      message: "Meta Integration fetched successfully.",
-      data: metaIntegrationDetails,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: error.message,
-    });
+      res.status(200).json({
+        message: "Meta Integration fetched successfully.",
+        data: metaIntegrationDetails,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        message: error.message,
+      });
+    }
   }
-  
-})
-
-
-
+);
 
 //
-router.post("/appendQuestionWithMeta", tokenVerification,async (req, res) => {
-  const { userText } = req.body; 
-  const userId = req.userIdFromToken; 
+router.post("/appendQuestionWithMeta", tokenVerification, async (req, res) => {
+  const { userText } = req.body;
+  const userId = req.userIdFromToken;
 
   try {
-  
-    const user = await User.findById(userId).select("company"); 
+    const user = await User.findById(userId).select("company");
     if (!user) {
       return res.status(404).send("User not found.");
     }
 
-    const companyId = user.company; 
-    
+    const companyId = user.company;
+
     if (!companyId) {
       return res.status(400).send("Company ID not found.");
     }
 
-
     // Step 2: Find the integration credentials using companyId
-    const integrationCredentials = await IntegrationCredentials.findOne({ companyId });
+    const integrationCredentials = await IntegrationCredentials.findOne({
+      companyId,
+    });
 
     if (!integrationCredentials) {
       return res.status(404).send("Integration credentials not found.");
     }
 
     // Step 3: Fetch Meta Integration details using integration ID
-    const metaIntegrationData = await MetaIntegrationDetail.find({ integration_id: integrationCredentials._id });
+    const metaIntegrationData = await MetaIntegrationDetail.find({
+      integration_id: integrationCredentials._id,
+    });
 
     if (!metaIntegrationData.length) {
       return res.status(404).send("Meta integration data not found.");
@@ -1266,23 +1252,21 @@ router.post("/appendQuestionWithMeta", tokenVerification,async (req, res) => {
 
     metaIntegrationData.forEach((table) => {
       let responseMessage = `Here is all the data of Table: ${table.table_name}`;
-      resultMessage += `${responseMessage}| Integration ID: ${table.integration_id} | Columns: ${JSON.stringify(table.columns)} | Description: ${table.description} | Update Date: ${table.updateDate}`;
+      resultMessage += `${responseMessage}| Integration ID: ${
+        table.integration_id
+      } | Columns: ${JSON.stringify(table.columns)} | Description: ${
+        table.description
+      } | Update Date: ${table.updateDate}`;
     });
 
- 
     console.log(resultMessage);
-
   } catch (error) {
     console.error("Error fetching data:", error);
     res.status(500).send("Server Error");
   }
 });
 
-
-
-
-
-// 
+//
 
 const poolTwo = mysql.createPool({
   host: "66.135.60.203",
@@ -1292,11 +1276,11 @@ const poolTwo = mysql.createPool({
   database: "dbtabib",
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
 });
 
 // API endpoint for Revenue Trends per Clinic
-router.get('/revenuetrends', (req, res) => {
+router.get("/revenuetrends", (req, res) => {
   // SQL query to get the revenue trends per clinic (monthly)
   const query = `
     SELECT
@@ -1322,17 +1306,15 @@ router.get('/revenuetrends', (req, res) => {
   // Execute the query
   poolTwo.query(query, (error, results) => {
     if (error) {
-      console.error('Error fetching data:', error);
-      return res.status(500).json({ error: 'Database query failed' });
+      console.error("Error fetching data:", error);
+      return res.status(500).json({ error: "Database query failed" });
     }
     // Return the results as JSON
     return res.json(results);
   });
 });
 
-
-
-router.get('/doctorPerformance', (req, res) => {
+router.get("/doctorPerformance", (req, res) => {
   // SQL query to get the doctor performance (appointments vs. feedback ratings)
   const query = `
     SELECT
@@ -1356,17 +1338,15 @@ router.get('/doctorPerformance', (req, res) => {
   // Execute the query
   poolTwo.query(query, (error, results) => {
     if (error) {
-      console.error('Error fetching data:', error);
-      return res.status(500).json({ error: 'Database query failed' });
+      console.error("Error fetching data:", error);
+      return res.status(500).json({ error: "Database query failed" });
     }
     // Return the results as JSON
     return res.json(results);
   });
 });
 
-
-
-router.get('/patientDemographics', (req, res) => {
+router.get("/patientDemographics", (req, res) => {
   // SQL query to get patient demographics and growth (age and gender groups)
   const query = `
     SELECT
@@ -1395,8 +1375,8 @@ router.get('/patientDemographics', (req, res) => {
   // Execute the query
   poolTwo.query(query, (error, results) => {
     if (error) {
-      console.error('Error fetching data:', error);
-      return res.status(500).json({ error: 'Database query failed' });
+      console.error("Error fetching data:", error);
+      return res.status(500).json({ error: "Database query failed" });
     }
     // Return the results as JSON
     return res.json(results);
@@ -1406,13 +1386,62 @@ router.get('/patientDemographics', (req, res) => {
 
 
 
+router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
+  const { requiredGraph, customText } = req.body;
+  const userId = req.userIdFromToken;
 
-router.post("/appendQuestion",(req,res)=>{
+  try {
+    const user = await User.findById(userId).select("company");
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
 
-})
+    const companyId = user.company;
 
+    if (!companyId) {
+      return res.status(400).send("Company ID not found.");
+    }
 
+    // Step 2: Find the integration credentials using companyId
+    const integrationCredentials = await IntegrationCredentials.findOne({
+      companyId,
+    });
 
+    if (!integrationCredentials) {
+      return res.status(404).send("Integration credentials not found.");
+    }
 
+    // Step 3: Fetch Meta Integration details using integration ID
+    const metaIntegrationData = await MetaIntegrationDetail.find({
+      integration_id: integrationCredentials._id,
+    });
+
+    if (!metaIntegrationData.length) {
+      return res.status(404).send("Meta integration data not found.");
+    }
+
+    // Step 4: Create the final result message
+    let resultMessage = `I have given you the structure format of my database. You need to identify the required graph and return only the query in response based on the custom text. "Required Graph": ${requiredGraph} + "Custom Text": ${customText}`;
+
+    metaIntegrationData.forEach((table) => {
+      let responseMessage = `Here is all the data of Table: ${table.table_name}`;
+      resultMessage += `${responseMessage}| Integration ID: ${
+        table.integration_id
+      } | Columns: ${JSON.stringify(table.columns)} | Description: ${
+        table.description
+      } | Update Date: ${table.updateDate}`;
+    });
+
+    console.log(resultMessage);
+
+    res.send(resultMessage)
+
+  
+
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    res.status(500).send("Server Error");
+  }
+});
 
 module.exports = router;
