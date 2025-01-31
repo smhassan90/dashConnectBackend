@@ -23,7 +23,12 @@ const mysql = require("mysql2");
 const TableStructure = require("../models/TableStructure");
 const IntegrationCredentials = require("../models/IntegrationCredentials");
 const MetaIntegrationDetail = require("../models/MetaIntegrationDetails");
-const {Configuration,OpenAIApi} = require("openai")
+const OpenAI = require("openai");
+
+const openai = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY, // Use Groq API Key
+  baseURL: "https://api.groq.com/openai/v1", // Change OpenAI base URL to Groq
+});
 
 router.get("/fetchAllTables", async (req, res) => {
   const tables = await TableStructure.find({}, "tableName");
@@ -874,9 +879,9 @@ async function testDbConnection(username, password, url) {
 
 // API endpoint to test the connection
 router.post("/testConnectionIntegration", async (req, res) => {
-  const { username, password, url, type } = req.body;
+  const { platform,username, password, url } = req.body;
 
-  if (!type) {
+  if (!platform) {
     return res.status(400).json({ error: "Connection type is required" });
   }
 
@@ -886,7 +891,7 @@ router.post("/testConnectionIntegration", async (req, res) => {
       .json({ error: "Missing required fields: username, password, or url" });
   }
 
-  if (type === "mySQL") {
+  if (platform === "mySQL") {
     try {
       const isConnected = await testDbConnection(username, password, url);
 
@@ -902,7 +907,7 @@ router.post("/testConnectionIntegration", async (req, res) => {
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }
-  } else if (type === "acuity") {
+  } else if (platform === "acuity") {
     try {
       const response = await axios.get(`${url}/appointments?max=30`, {
         auth: {
@@ -981,6 +986,8 @@ router.get("/tables-structure", (req, res) => {
   });
 });
 
+
+
 // create integration credentials api
 router.post("/integrationCredntial", tokenVerification, async (req, res) => {
   try {
@@ -1002,7 +1009,7 @@ router.post("/integrationCredntial", tokenVerification, async (req, res) => {
 
     console.log("Parsed MySQL Details:", { host, port, database });
 
-    const existingCredential = await integrationCredentials.findOne({
+    const existingCredential = await IntegrationCredentials.findOne({
       url,
       username,
       password,
@@ -1044,7 +1051,7 @@ router.post("/integrationCredntial", tokenVerification, async (req, res) => {
 
     const company = user.company;
 
-    const inteCredentials = await integrationCredentials.create({
+    const inteCredentials = await IntegrationCredentials.create({
       companyId: company._id,
       platformName,
       integrationName,
@@ -1188,7 +1195,7 @@ router.post(
       const companyId = userData.company;
       console.log("companyId-->", companyId);
 
-      const integrationCredential = await integrationCredentials.findOne({
+      const integrationCredential = await IntegrationCredentials.findOne({
         companyId,
       });
 
@@ -1213,10 +1220,12 @@ router.post(
 );
 
 //
-router.post("/appendQuestionWithMeta", tokenVerification, async (req, res) => {
-  const { userText } = req.body;
-  const userId = req.userIdFromToken;
+router.post("/sugestionOfGraph", tokenVerification, async (req, res) => {
+  const { requiredGraph } = req.body;
+  const customText = `I have given you the structure format of my database. You need to identify the required graph and return and provide 4-5 Analytical Graph and its description only`
 
+  const userId = req.userIdFromToken;
+  
   try {
     const user = await User.findById(userId).select("company");
     if (!user) {
@@ -1248,10 +1257,10 @@ router.post("/appendQuestionWithMeta", tokenVerification, async (req, res) => {
     }
 
     // Step 4: Create the final result message
-    let resultMessage = `User Text: ${userText}`;
+    let resultMessage = customText;
 
     metaIntegrationData.forEach((table) => {
-      let responseMessage = `Here is all the data of Table: ${table.table_name}`;
+      let responseMessage = ` + ${requiredGraph} Here is all the data of Table: ${table.table_name}`;
       resultMessage += `${responseMessage}| Integration ID: ${
         table.integration_id
       } | Columns: ${JSON.stringify(table.columns)} | Description: ${
@@ -1259,7 +1268,20 @@ router.post("/appendQuestionWithMeta", tokenVerification, async (req, res) => {
       } | Update Date: ${table.updateDate}`;
     });
 
-    console.log(resultMessage);
+    const aiResponse = await openai.chat.completions.create({
+      model: "llama-3.3-70b-versatile", // Use Groq-supported model
+      messages: [{ role: "user", content: resultMessage }],
+    });
+    
+    res.json({
+      ai_response: aiResponse.choices[0].message.content
+    });
+
+
+    const result = aiResponse.choices[0].message.content
+    console.log(result);
+
+    // console.log(resultMessage);
   } catch (error) {
     console.error("Error fetching data:", error);
     res.status(500).send("Server Error");
@@ -1280,28 +1302,10 @@ const poolTwo = mysql.createPool({
 });
 
 // API endpoint for Revenue Trends per Clinic
-router.get("/revenuetrends", (req, res) => {
+router.get("/testing", (req, res) => {
   // SQL query to get the revenue trends per clinic (monthly)
   const query = `
-    SELECT
-        c.NAME AS Clinic_Name,
-        DATE_FORMAT(a.VISIT_DATE, '%Y-%m') AS Month,
-        SUM(a.charges) AS Total_Revenue
-    FROM
-        t_appointment a
-    JOIN
-        t_doctor_clinic dc ON a.DOCTOR_ID = dc.DOCTOR_ID
-    JOIN
-        t_clinic c ON dc.CLINIC_ID = c.ID
-    WHERE
-        a.status = 1  -- Assuming 1 means completed/confirmed appointments
-    GROUP BY
-        c.NAME,
-        DATE_FORMAT(a.VISIT_DATE, '%Y-%m')
-    ORDER BY
-        Month DESC,
-        c.NAME;
-  `;
+ SELECT DATE(VISIT_DATE) AS DATE, COUNT(id) AS NUMBER_OF_PENDING_APPOINTMENTS FROM t_appointment WHERE status = 0 GROUP BY DATE(VISIT_DATE) ORDER BY DATE(VISIT_DATE); `;
 
   // Execute the query
   poolTwo.query(query, (error, results) => {
@@ -1312,76 +1316,87 @@ router.get("/revenuetrends", (req, res) => {
     // Return the results as JSON
     return res.json(results);
   });
-});
+}); 
 
-router.get("/doctorPerformance", (req, res) => {
-  // SQL query to get the doctor performance (appointments vs. feedback ratings)
-  const query = `
-    SELECT
-        d.NAME AS Doctor_Name,
-        COUNT(a.id) AS Total_Appointments,
-        AVG(f.RATING) AS Average_Feedback_Rating
-    FROM
-        t_appointment a
-    JOIN
-        t_doctor d ON a.DOCTOR_ID = d.ID
-    LEFT JOIN
-        t_feedback f ON a.PATIENT_ID = f.PATIENT_ID AND a.DOCTOR_ID = f.DOCTOR_ID
-    WHERE
-        a.status = 1  -- Assuming 1 means completed/confirmed appointments
-    GROUP BY
-        d.NAME
-    ORDER BY
-        Total_Appointments DESC;
-  `;
 
-  // Execute the query
-  poolTwo.query(query, (error, results) => {
-    if (error) {
-      console.error("Error fetching data:", error);
-      return res.status(500).json({ error: "Database query failed" });
-    }
-    // Return the results as JSON
-    return res.json(results);
-  });
-});
 
-router.get("/patientDemographics", (req, res) => {
-  // SQL query to get patient demographics and growth (age and gender groups)
-  const query = `
-    SELECT
-        DATE_FORMAT(a.VISIT_DATE, '%Y-%m') AS Month,
-        p.GENDER AS Gender,
-        CASE
-            WHEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(p.DOB, '%Y-%m-%d'), CURDATE()) BETWEEN 0 AND 18 THEN '0-18'
-            WHEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(p.DOB, '%Y-%m-%d'), CURDATE()) BETWEEN 19 AND 30 THEN '19-30'
-            WHEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(p.DOB, '%Y-%m-%d'), CURDATE()) BETWEEN 31 AND 45 THEN '31-45'
-            WHEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(p.DOB, '%Y-%m-%d'), CURDATE()) BETWEEN 46 AND 60 THEN '46-60'
-            WHEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(p.DOB, '%Y-%m-%d'), CURDATE()) > 60 THEN '60+'
-        END AS Age_Group,
-        COUNT(DISTINCT p.id) AS Total_Patients
-    FROM
-        t_appointment a
-    JOIN
-        t_patient p ON a.PATIENT_ID = p.id
-    WHERE
-        a.status = 1  -- Assuming 1 means completed/confirmed appointments
-    GROUP BY
-        Month, p.GENDER, Age_Group
-    ORDER BY
-        Month DESC, Age_Group;
-  `;
 
-  // Execute the query
-  poolTwo.query(query, (error, results) => {
-    if (error) {
-      console.error("Error fetching data:", error);
-      return res.status(500).json({ error: "Database query failed" });
-    }
-    // Return the results as JSON
-    return res.json(results);
-  });
-});
+
+// const configuration = new Configuration({
+//   apiKey: process.env.OPENAI_API_KEY
+// })
+
+
+// const openai = new OpenAI(configuration)
+
+
+// router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
+//   const { requiredGraph, customText } = req.body;
+//   const userId = req.userIdFromToken;
+
+//   try {
+//     const user = await User.findById(userId).select("company");
+//     if (!user) {
+//       return res.status(404).send("User not found.");
+//     }
+
+//     const companyId = user.company;
+
+//     if (!companyId) {
+//       return res.status(400).send("Company ID not found.");
+//     } 
+
+//     // Step 2: Find the integration credentials using companyId
+//     const integrationCredentials = await IntegrationCredentials.findOne({
+//       companyId,
+//     });
+
+//     if (!integrationCredentials) {
+//       return res.status(404).send("Integration credentials not found.");
+//     }
+
+//     // Step 3: Fetch Meta Integration details using integration ID
+//     const metaIntegrationData = await MetaIntegrationDetail.find({
+//       integration_id: integrationCredentials._id,
+//     });
+
+//     if (!metaIntegrationData.length) {
+//       return res.status(404).send("Meta integration data not found.");
+//     }
+
+//     // Step 4: Create the final result message
+//     let resultMessage = `I have given you the structure format of my database. You need to identify the required graph and return only the query in response based on the custom text. "Required Graph": ${requiredGraph} + "Custom Text": ${customText}`;
+
+//     metaIntegrationData.forEach((table) => {
+//       let responseMessage = `Here is all the data of Table: ${table.table_name}`;
+//       resultMessage += `${responseMessage}| Integration ID: ${
+//         table.integration_id
+//       } | Columns: ${JSON.stringify(table.columns)} | Description: ${
+//         table.description
+//       } | Update Date: ${table.updateDate}`;
+//     });
+
+//     console.log(resultMessage);
+
+//     res.send(resultMessage)
+
+//     const aiResponse = openai.createChatCompletion({
+//       model: "gpt-3.5-turbo",
+//       messages:[{
+//         role:"user",
+//         content:resultMessage
+//       }]
+//     })
+//   res.json({
+//     ai_respose: aiResponse.data.choices[0].message
+//   })
+
+//   } catch (error) {
+//     console.error("Error fetching data:", error);
+//     res.status(500).send("Server Error");
+//   }
+// });
+
 
 
 
@@ -1397,12 +1412,10 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
     }
 
     const companyId = user.company;
-
     if (!companyId) {
       return res.status(400).send("Company ID not found.");
     }
 
-    // Step 2: Find the integration credentials using companyId
     const integrationCredentials = await IntegrationCredentials.findOne({
       companyId,
     });
@@ -1411,7 +1424,6 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
       return res.status(404).send("Integration credentials not found.");
     }
 
-    // Step 3: Fetch Meta Integration details using integration ID
     const metaIntegrationData = await MetaIntegrationDetail.find({
       integration_id: integrationCredentials._id,
     });
@@ -1420,28 +1432,66 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
       return res.status(404).send("Meta integration data not found.");
     }
 
-    // Step 4: Create the final result message
+    // Create the message for Groq AI
     let resultMessage = `I have given you the structure format of my database. You need to identify the required graph and return only the query in response based on the custom text. "Required Graph": ${requiredGraph} + "Custom Text": ${customText}`;
 
     metaIntegrationData.forEach((table) => {
-      let responseMessage = `Here is all the data of Table: ${table.table_name}`;
-      resultMessage += `${responseMessage}| Integration ID: ${
-        table.integration_id
-      } | Columns: ${JSON.stringify(table.columns)} | Description: ${
-        table.description
-      } | Update Date: ${table.updateDate}`;
+      resultMessage += `| Table: ${table.table_name} | Columns: ${JSON.stringify(table.columns)} | Description: ${table.description} | Update Date: ${table.updateDate}`;
     });
 
-    console.log(resultMessage);
+    // console.log("Sending to Groq Cloud AI:", resultMessage);
 
-    res.send(resultMessage)
+    // Call Groq API (Same as OpenAI)
+    const aiResponse = await openai.chat.completions.create({
+      model: "llama-3.3-70b-versatile", // Use Groq-supported model
+      messages: [{ role: "user", content: resultMessage }],
+    });
 
+    function cleanSQLQuery(inputString) {
+      const cleanedQuery = inputString
+        .replace(/```sql\n?/i, '') 
+        .replace(/```$/, '') 
+        .replace(/\n/g, ' ') 
+        .replace(/\s+/g, ' ') 
+        .trim();
+      return cleanedQuery;
+    }
+      
+    // res.json({
+    //   ai_response: cleanSQLQuery(aiResponse.choices[0].message.content),
+    // });
+
+    const result = cleanSQLQuery(aiResponse.choices[0].message.content)
+    console.log(result);
+    
+    const query = result
+   
+     // Execute the query
+     poolTwo.query(query, (error, results) => {
+       if (error) {
+         console.error("Error fetching data:", error);
+         return res.status(500).json({ error: "Database query failed" });
+       }
+       // Return the results as JSON
+       return res.json(results);
+     });
   
-
   } catch (error) {
     console.error("Error fetching data:", error);
     res.status(500).send("Server Error");
   }
 });
+// function cleanSQLQuery(inputString) {
+//   const cleanedQuery = inputString
+//     .replace(/```sql\n?/i, '') 
+//     .replace(/```$/, '') 
+//     .replace(/\n/g, ' ') 
+//     .replace(/\s+/g, ' ') 
+//     .trim();
+//   return cleanedQuery;
+// }
+ 
+
+
 
 module.exports = router;
