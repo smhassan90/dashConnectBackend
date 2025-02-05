@@ -3,13 +3,20 @@ const mongoose = require('mongoose');
 const app = express();
 const cors = require('cors');
 const path = require('path');
-require("./Routes/user")
+
 
 
 // Routes
-const authRoute = require('./Routes/user');
-// const url = `mongodb://localhost:27017`; // for local testing
-const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@honeycluster.xggo8.mongodb.net/`
+const authRoute = require('./Routes/userAuthApi');
+const intgrationRoute = require('./Routes/integrationApi')
+const employeeRoute = require('./Routes/employeeApi')
+
+
+
+const url = `mongodb://localhost:27017/`; // for local testing
+// const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@hunainbaig.xggo8.mongodb.net/?retryWrites=true&w=majority&appName=HunainBaig`
+
+
 
 app.use(cors());
 app.use(express.json());
@@ -25,7 +32,11 @@ mongoose.connect(url)
 
 
 //TOOD: add /v1/
+app.use('/api/employee/v1',employeeRoute)
+app.use('/api/integration/v1',intgrationRoute)
 app.use('/api/user/v1', authRoute);
+ 
+
 
 app.listen(3000, () => {
     console.log("Server is running on port 3000");
