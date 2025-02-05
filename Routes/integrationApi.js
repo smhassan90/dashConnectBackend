@@ -429,7 +429,7 @@ router.post("/sugestionOfGraph", tokenVerification, async (req, res) => {
 
 
 
-// create --> generateGraphQuery
+// create -> generateGraphQuery
 
 const poolTwo = mysql.createPool({
     host: "66.135.60.203",
