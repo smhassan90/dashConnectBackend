@@ -241,7 +241,7 @@ router.post("/integrationCredntial", tokenVerification, async (req, res) => {
 
 
 
-  // create Meta integration detalis API
+//  create Meta integration detalis API
 const pool = mysql
 .createPool({
   host: "66.135.60.203",
@@ -354,6 +354,7 @@ try {
   });
 }
 });
+
 
 
 
@@ -484,7 +485,7 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
   
       // console.log("Sending to Groq Cloud AI:", resultMessage);
   
-      // Call Groq API (Same as OpenAI)
+      // Call Groq API 
       const aiResponse = await openai.chat.completions.create({
         model: "llama-3.3-70b-versatile", // Use Groq-supported model
         messages: [{ role: "user", content: resultMessage }],
@@ -516,7 +517,12 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
            return res.status(500).json({ error: "Database query failed" });
          }
          // Return the results as JSON
-         return res.json(transformToLineGraphData(results));
+         if(type=== graph){
+          return res.json(transformToLineGraphData(results));
+         }else if(type===report){
+          return res.json(transformreportdata(results));
+         }
+         
        });
     
     } catch (error) {
@@ -583,9 +589,10 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
     user: "kamran",
     password: "Pma_109c",
     database: "dbtabib",
+    connectTimeout:100000 
   });
   
-  router.get("/tables-structure", (req, res) => {
+  router.get("/tableStructure", (req, res) => {
     poolOne.query("SHOW TABLES", (err, results) => {
       if (err) {
         console.error("Error fetching tables:", err);

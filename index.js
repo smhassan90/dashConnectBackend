@@ -13,8 +13,8 @@ const employeeRoute = require('./Routes/employeeApi')
 
 
 
-const url = `mongodb://localhost:27017/`; // for local testing
-// const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@hunainbaig.xggo8.mongodb.net/?retryWrites=true&w=majority&appName=HunainBaig`
+// const url = `mongodb://localhost:27017/`; // for local testing
+const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@hunainbaig.xggo8.mongodb.net/?retryWrites=true&w=majority&appName=HunainBaig`
 
 
 
