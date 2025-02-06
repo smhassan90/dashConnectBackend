@@ -87,7 +87,7 @@ async function testDbConnection(username, password, url) {
         password: password,
         database: dbname,
         port: parseInt(port, 10),
-        connectTimeout:100000
+        connectTimeout:1000
       });
   
       connection.connect((err) => {
@@ -117,7 +117,7 @@ async function testDbConnection(username, password, url) {
         .json({ error: "Missing required fields: username, password, or url" });
     }
    
-    if (platform === "mySQL") {
+    if (platform === "mysql") {
       try {
         const isConnected = await testDbConnection(username, password, url);
   
