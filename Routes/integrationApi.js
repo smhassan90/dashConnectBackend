@@ -87,6 +87,7 @@ async function testDbConnection(username, password, url) {
         password: password,
         database: dbname,
         port: parseInt(port, 10),
+        connectTimeout:100000
       });
   
       connection.connect((err) => {
@@ -115,7 +116,7 @@ async function testDbConnection(username, password, url) {
         .status(400)
         .json({ error: "Missing required fields: username, password, or url" });
     }
-  
+   
     if (platform === "mySQL") {
       try {
         const isConnected = await testDbConnection(username, password, url);
@@ -517,11 +518,11 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
            return res.status(500).json({ error: "Database query failed" });
          }
          // Return the results as JSON
-         if(type=== graph){
+         if (requiredGraph === 'graph') {
           return res.json(transformToLineGraphData(results));
-         }else if(type===report){
-          return res.json(transformreportdata(results));
-         }
+        } else if (requiredGraph === 'report') {
+          return res.json(generateReportFromQuery(results));
+        }
          
        });
     
@@ -579,6 +580,36 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
     console.log("After:", JSON.stringify(response, null, 2));
     return response;
 }
+
+function generateReportFromQuery(results) {
+  if (!Array.isArray(results) || results.length === 0) {
+    console.error("Error: Invalid or empty data.");
+    return { report: "No data found." };
+  }
+
+  // Dynamically generate report by iterating over the results
+  const report = results.map(row => {
+    const rowReport = {};
+
+    // Iterate over all keys in the row to dynamically add columns
+    Object.keys(row).forEach((column) => {
+      rowReport[column] = row[column]; // Add each column dynamically
+    });
+
+    return rowReport;
+  });
+
+  // Optionally, you can add a summary or other report-specific info
+  const summary = `Total rows in the report: ${results.length}`;
+
+  console.log(report,summary);
+  return {
+    summary,
+    data: report,
+  };
+  
+}
+
 
 
 
