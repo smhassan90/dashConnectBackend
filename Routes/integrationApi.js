@@ -478,7 +478,7 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
       }
   
       // Create the message for Groq AI
-      let resultMessage = `I have given you the structure format of my database. You need to identify the required graph and return only the query in response based on the custom text. "Required Graph": ${requiredGraph} + "Custom Text": ${customText}`;
+      let resultMessage = `I have given you the structure format of my database. You need to identify the required graph it may be asking for report and graph and return only the query in response based on the custom text. "Required Graph": ${requiredGraph} + "Custom Text": ${customText}`;
   
       metaIntegrationData.forEach((table) => {
         resultMessage += `| Table: ${table.table_name} | Columns: ${JSON.stringify(table.columns)} | Description: ${table.description} | Update Date: ${table.updateDate}`;
@@ -521,7 +521,13 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
          if (requiredGraph === 'graph') {
           return res.json(transformToLineGraphData(results));
         } else if (requiredGraph === 'report') {
-          return res.json(generateReportFromQuery(results));
+
+          
+          console.log("results",results);
+          const output = JSON.stringify(results)
+          
+          console.log("output-->",output);
+          return res.status(200).json({ output });
         }
          
        });
@@ -581,34 +587,34 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
     return response;
 }
 
-function generateReportFromQuery(results) {
-  if (!Array.isArray(results) || results.length === 0) {
-    console.error("Error: Invalid or empty data.");
-    return { report: "No data found." };
-  }
+// function generateReportFromQuery(results) {
+//   if (!Array.isArray(results) || results.length === 0) {
+//     console.error("Error: Invalid or empty data.");
+//     return "No data found.";
+//   }
 
-  // Dynamically generate report by iterating over the results
-  const report = results.map(row => {
-    const rowReport = {};
+//   // Extract all unique column names
+//   const columns = Object.keys(results[0]);
 
-    // Iterate over all keys in the row to dynamically add columns
-    Object.keys(row).forEach((column) => {
-      rowReport[column] = row[column]; // Add each column dynamically
-    });
+//   // Create table header
+//   let tableReport = columns.join(" | ") + "\n";
+//   tableReport += "-".repeat(tableReport.length) + "\n";
 
-    return rowReport;
-  });
+//   // Create table rows
+//   results.forEach(row => {
+//     let rowData = columns.map(col => row[col]).join(" | ");
+//     tableReport += rowData + "\n";
+//   });
 
-  // Optionally, you can add a summary or other report-specific info
-  const summary = `Total rows in the report: ${results.length}`;
+//   // Summary of report
+//   const summary = `Total rows: ${results.length}`;
 
-  console.log(report,summary);
-  return {
-    summary,
-    data: report,
-  };
-  
-}
+//   console.log(tableReport + "\n" + summary);
+//   return {
+//     summary,
+//     tableReport
+//   };
+// }
 
 
 
