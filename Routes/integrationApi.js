@@ -521,11 +521,7 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
          if (requiredGraph === 'graph') {
           return res.json(transformToLineGraphData(results));
         } else if (requiredGraph === 'report') {
-
-          
-          console.log("results",results);
           const output = JSON.stringify(results)
-          
           console.log("output-->",output);
           return res.status(200).json({ output });
         }
