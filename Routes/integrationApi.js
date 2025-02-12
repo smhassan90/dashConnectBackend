@@ -87,7 +87,7 @@ async function testDbConnection(username, password, url) {
         password: password,
         database: dbname,
         port: parseInt(port, 10),
-        connectTimeout:1000
+        connectTimeout:10000
       });
   
       connection.connect((err) => {
@@ -117,7 +117,7 @@ async function testDbConnection(username, password, url) {
         .json({ error: "Missing required fields: username, password, or url" });
     }
    
-    if (platform === "mysql") {
+    if (platform.toLowerCase() === "mysql") {
       try {
         const isConnected = await testDbConnection(username, password, url);
   
@@ -487,11 +487,12 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
       // console.log("Sending to Groq Cloud AI:", resultMessage);
   
       // Call Groq API 
+      /*
       const aiResponse = await openai.chat.completions.create({
         model: "llama-3.3-70b-versatile", // Use Groq-supported model
         messages: [{ role: "user", content: resultMessage }],
       });
-  
+  */
       function cleanSQLQuery(inputString) {
         const cleanedQuery = inputString
           .replace(/```sql\n?/i, '') 
@@ -506,7 +507,8 @@ router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
       //   ai_response: cleanSQLQuery(aiResponse.choices[0].message.content),
       // });
   
-      const result = cleanSQLQuery(aiResponse.choices[0].message.content)
+      //const result = cleanSQLQuery(aiResponse.choices[0].message.content)
+      const result = "SELECT t_doctor.ID, t_doctor.NAME, SUM(t_appointment.charges) AS total_income FROM t_doctor JOIN t_appointment ON t_doctor.ID = t_appointment.DOCTOR_ID GROUP BY t_doctor.ID, t_doctor.NAME";
       console.log(result);
       
     //   const query = result

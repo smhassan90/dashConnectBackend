@@ -13,9 +13,10 @@ const employeeRoute = require('./Routes/employeeApi')
 
 
 
-const url = `mongodb://localhost:27017/`; // for local testing
+// const url = `mongodb://localhost:27017/`; // for local testing
 // const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@hunainbaig.xggo8.mongodb.net/?retryWrites=true&w=majority&appName=HunainBaig`
-
+// const url = `mongodb+srv://bilal:dashconnect123@cluster0.t9ett.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const url = `mongodb+srv://bilal:dashconnect123@cluster0.t9ett.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 
 app.use(cors());
