@@ -63,93 +63,93 @@ router.post(
 
 // Function to test the MySQL database connection
 async function testDbConnection(username, password, url) {
-  const match = url.match(/jdbc:mysql:\/\/(.*):(\d+)\/(.*)/);
-  if (!match) {
-    throw new Error("Invalid MySQL URL format");
-  }
-
-  const [_, host, port, dbname] = match;
-  return new Promise((resolve, reject) => {
-    console.log("host", host);
-    console.log("username", username);
-    console.log("port", port);
-    console.log("password", password);
-    console.log("dbname", dbname);
-    const connection = mysql.createConnection({
-      host: host,
-      user: username,
-      password: password,
-      database: dbname,
-      port: parseInt(port, 10),
-      connectTimeout: 1000,
+    const match = url.match(/jdbc:mysql:\/\/(.*):(\d+)\/(.*)/);
+    if (!match) {
+      throw new Error("Invalid MySQL URL format");
+    }
+  
+    const [_, host, port, dbname] = match;
+    return new Promise((resolve, reject) => {
+      console.log("host", host);
+      console.log("username", username);
+      console.log("port", port);
+      console.log("password", password);
+      console.log("dbname", dbname);
+      const connection = mysql.createConnection({
+        host: host,
+        user: username,
+        password: password,
+        database: dbname,
+        port: parseInt(port, 10),
+        connectTimeout:10000
+      });
+  
+      connection.connect((err) => {
+        if (err) {
+          console.error("Connection error:", err.message);
+          resolve(false); 
+        } else {
+          console.log("MySQL connection successful");
+          resolve(true); 
+        }
+        connection.end(); // Always close the connection
+      });
     });
-
-    connection.connect((err) => {
-      if (err) {
-        console.error("Connection error:", err.message);
-        resolve(false);
-      } else {
-        console.log("MySQL connection successful");
-        resolve(true);
+  }
+  
+  // API endpoint to test the connection
+  router.post("/testConnectionIntegration", async (req, res) => {
+    const { platform,username, password, url } = req.body;
+  
+    if (!platform) {
+      return res.status(400).json({ error: "Connection type is required" });
+    }
+  
+    if (!username || !password || !url) {
+      return res
+        .status(400)
+        .json({ error: "Missing required fields: username, password, or url" });
+    }
+   
+    if (platform.toLowerCase() === "mysql") {
+      try {
+        const isConnected = await testDbConnection(username, password, url);
+  
+        if (isConnected) {
+          return res
+            .status(200)
+            .json({ status: "success", message: "MySQL connection successful" });
+        } else {
+          return res
+            .status(500)
+            .json({ status: "failure", message: "MySQL connection failed" });
+        }
+      } catch (error) {
+        return res.status(400).json({ error: error.message });
       }
-      connection.end(); // Always close the connection
-    });
-  });
-}
-
-// API endpoint to test the connection
-router.post("/testConnectionIntegration", async (req, res) => {
-  const { platform, username, password, url } = req.body;
-
-  if (!platform) {
-    return res.status(400).json({ error: "Connection type is required" });
-  }
-
-  if (!username || !password || !url) {
-    return res
-      .status(400)
-      .json({ error: "Missing required fields: username, password, or url" });
-  }
-
-  if (platform === "mysql") {
-    try {
-      const isConnected = await testDbConnection(username, password, url);
-
-      if (isConnected) {
-        return res
-          .status(200)
-          .json({ status: "success", message: "MySQL connection successful" });
-      } else {
+    } else if (platform === "acuity") {
+      try {
+        const response = await axios.get(`${url}/appointments?max=30`, {
+          auth: {
+            username: username,
+            password: password,
+          },
+        });
+  
+        return res.json({
+          message: "Acuity connection successful, appointment data fetched",
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Error fetching Acuity appointments:", error.message);
         return res
           .status(500)
-          .json({ status: "failure", message: "MySQL connection failed" });
+          .json({ error: "Failed to fetch appointments from Acuity API" });
       }
-    } catch (error) {
-      return res.status(400).json({ error: error.message });
+    } else {
+      return res.status(400).json({ error: "Invalid connection type" });
     }
-  } else if (platform === "acuity") {
-    try {
-      const response = await axios.get(`${url}/appointments?max=30`, {
-        auth: {
-          username: username,
-          password: password,
-        },
-      });
-
-      return res.json({
-        message: "Acuity connection successful, appointment data fetched",
-        data: response.data,
-      });
-    } catch (error) {
-      console.error("Error fetching Acuity appointments:", error.message);
-      return res
-        .status(500)
-        .json({ error: "Failed to fetch appointments from Acuity API" });
-    }
-  } else {
-    return res.status(400).json({ error: "Invalid connection type" });
-  }
-});
+  });
 
 // create integration credentials api
 router.post("/integrationCredntial", tokenVerification, async (req, res) => {
@@ -430,68 +430,70 @@ const poolTwo = mysql.createPool({
 });
 
 router.post("/generateGraphQuery", tokenVerification, async (req, res) => {
-  const { requiredGraph, customText } = req.body;
-  const userId = req.userIdFromToken;
-
-  try {
-    const user = await User.findById(userId).select("company");
-    if (!user) {
-      return res.status(404).send("User not found.");
-    }
-
-    const companyId = user.company;
-    if (!companyId) {
-      return res.status(400).send("Company ID not found.");
-    }
-
-    const integrationCredentials = await IntegrationCredentials.findOne({
-      companyId,
-    });
-
-    if (!integrationCredentials) {
-      return res.status(404).send("Integration credentials not found.");
-    }
-
-    const metaIntegrationData = await MetaIntegrationDetail.find({
-      integration_id: integrationCredentials._id,
-    });
-
-    if (!metaIntegrationData.length) {
-      return res.status(404).send("Meta integration data not found.");
-    }
-
-    // Create the message for Groq AI
-    let resultMessage = `I have given you the structure format of my database. You need to identify the required graph it may be asking for report and graph and return only the query in response based on the custom text. "Required Graph": ${requiredGraph} + "Custom Text": ${customText}`;
-
-    metaIntegrationData.forEach((table) => {
-      resultMessage += `| Table: ${table.table_name} | Columns: ${JSON.stringify(table.columns)} | Description: ${table.description} | Update Date: ${table.updateDate}`;
-    });
-
-    // console.log("Sending to Groq Cloud AI:", resultMessage);
-
-    // Call Groq API
-    const aiResponse = await openai.chat.completions.create({
-      model: "llama-3.3-70b-versatile", // Use Groq-supported model
-      messages: [{ role: "user", content: resultMessage }],
-    });
-
-    function cleanSQLQuery(inputString) {
-      const cleanedQuery = inputString
-        .replace(/```sql\n?/i, "")
-        .replace(/```$/, "")
-        .replace(/\n/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-      return cleanedQuery;
-    }
-
-    // res.json({
-    //   ai_response: cleanSQLQuery(aiResponse.choices[0].message.content),
-    // });
-
-    const result = cleanSQLQuery(aiResponse.choices[0].message.content);
-    console.log(result);
-
+    const { requiredGraph, customText } = req.body;
+    const userId = req.userIdFromToken;
+  
+    try {
+      const user = await User.findById(userId).select("company");
+      if (!user) {
+        return res.status(404).send("User not found.");
+      }
+  
+      const companyId = user.company;
+      if (!companyId) {
+        return res.status(400).send("Company ID not found.");
+      }
+  
+      const integrationCredentials = await IntegrationCredentials.findOne({
+        companyId,
+      });
+  
+      if (!integrationCredentials) {
+        return res.status(404).send("Integration credentials not found.");
+      }
+  
+      const metaIntegrationData = await MetaIntegrationDetail.find({
+        integration_id: integrationCredentials._id,
+      });
+  
+      if (!metaIntegrationData.length) {
+        return res.status(404).send("Meta integration data not found.");
+      }
+  
+      // Create the message for Groq AI
+      let resultMessage = `I have given you the structure format of my database. You need to identify the required graph it may be asking for report and graph and return only the query in response based on the custom text. "Required Graph": ${requiredGraph} + "Custom Text": ${customText}`;
+  
+      metaIntegrationData.forEach((table) => {
+        resultMessage += `| Table: ${table.table_name} | Columns: ${JSON.stringify(table.columns)} | Description: ${table.description} | Update Date: ${table.updateDate}`;
+      });
+  
+      // console.log("Sending to Groq Cloud AI:", resultMessage);
+  
+      // Call Groq API 
+      /*
+      const aiResponse = await openai.chat.completions.create({
+        model: "llama-3.3-70b-versatile", // Use Groq-supported model
+        messages: [{ role: "user", content: resultMessage }],
+      });
+  */
+      function cleanSQLQuery(inputString) {
+        const cleanedQuery = inputString
+          .replace(/```sql\n?/i, '') 
+          .replace(/```$/, '') 
+          .replace(/\n/g, ' ') 
+          .replace(/\s+/g, ' ') 
+          .trim();
+        return cleanedQuery;
+      }
+        
+      // res.json({
+      //   ai_response: cleanSQLQuery(aiResponse.choices[0].message.content),
+      // });
+  
+      //const result = cleanSQLQuery(aiResponse.choices[0].message.content)
+      const result = "SELECT t_doctor.ID, t_doctor.NAME, SUM(t_appointment.charges) AS total_income FROM t_doctor JOIN t_appointment ON t_doctor.ID = t_appointment.DOCTOR_ID GROUP BY t_doctor.ID, t_doctor.NAME";
+      console.log(result);
+      
     //   const query = result
 
     // Execute the query
