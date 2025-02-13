@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 async function sendPasswordResetEmail(email, token) {
   try {
     const info = await transporter.sendMail({
-      from: 'xunainali4@gmail.com', // sender address
+      from: "xunainali4@gmail.com", // sender address
       to: email, // list of receivers
       subject: "Reset Your Password", // Subject line
       text: `Token: ${token}\nPlease click the link below to reset your password`, // plain text body
@@ -31,4 +31,3 @@ async function sendPasswordResetEmail(email, token) {
 }
 
 module.exports = sendPasswordResetEmail;
-

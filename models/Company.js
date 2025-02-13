@@ -1,5 +1,4 @@
-const mongoose = require('mongoose');
-
+const mongoose = require("mongoose");
 
 const companySchema = new mongoose.Schema({
   companyName: {
@@ -18,5 +17,3 @@ const companySchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("Company", companySchema);
-
-

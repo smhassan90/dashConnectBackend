@@ -17,9 +17,6 @@ const path = require("path");
 const fs = require("fs");
 const csvParser = require("csv-parser");
 
-
-
-
 // create --> user API
 router.post("/register", async (req, res) => {
   try {
@@ -55,8 +52,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-
-
 // create --> Login API
 router.post("/login", async (req, res) => {
   try {
@@ -69,7 +64,7 @@ router.post("/login", async (req, res) => {
       if (checkPassword) {
         const token = jwt.sign(
           { id: user._id, email: user.email },
-          process.env.JWT_SECRET
+          process.env.JWT_SECRET,
         );
         res.status(200).send({
           status: 200,
@@ -94,8 +89,6 @@ router.post("/login", async (req, res) => {
     res.status(500).send({ status: 500, error: "Internal Server Error" });
   }
 });
-
-
 
 // create --> Change Password API
 router.put("/changePassword", tokenVerification, async (req, res) => {
@@ -123,8 +116,6 @@ router.put("/changePassword", tokenVerification, async (req, res) => {
     res.status(500).send({ message: "Internal server error" });
   }
 });
-
-
 
 // Upload image API
 const storage = multer.diskStorage({
@@ -172,10 +163,8 @@ router.post(
         error: error.message,
       });
     }
-  }
+  },
 );
-
-
 
 // create --> Forgot password and Reset password API
 router.post("/forgotPassword", async (req, res) => {
@@ -189,7 +178,7 @@ router.post("/forgotPassword", async (req, res) => {
 
       const updateData = await User.updateOne(
         { _id: user._id },
-        { $set: { token: token } }
+        { $set: { token: token } },
       );
 
       await sendMail(user.email, token);
@@ -219,7 +208,7 @@ router.post("/resetPassword", async (req, res) => {
       const updateData = await User.findByIdAndUpdate(
         { _id: user._id },
         { $set: { password: hashedPassword, token: "" } },
-        { new: true }
+        { new: true },
       );
       res
         .status(200)
@@ -231,9 +220,6 @@ router.post("/resetPassword", async (req, res) => {
     res.status(400).send(error.message);
   }
 });
-
-
-
 
 // create --> csv file upload API
 router.get("/createSchema", async (req, res) => {
@@ -285,9 +271,6 @@ router.get("/createSchema", async (req, res) => {
   }
 });
 
-
-
-
 //  create --> Nuke Users API. It will delete all users from users collection
 router.delete("/nukeUsers", async (req, res) => {
   try {
@@ -309,10 +292,5 @@ router.delete("/nukeCompanies", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
-
-
-
-
 
 module.exports = router;
