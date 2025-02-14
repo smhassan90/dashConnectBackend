@@ -19,10 +19,10 @@ const employeeRoute = require('./Routes/employeeApi')
 const url = `mongodb+srv://bilal:dashconnect123@cluster0.t9ett.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 const corsOptions = {
-    origin: '*', // Allow only your frontend domain
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
-    credentials: true, // Allow credentials (cookies, auth tokens)
+    origin: 'https://dash-connect-vert.vercel.app', // Allow only your frontend domain
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Ensure OPTIONS is allowed
+    allowedHeaders: ['Content-Type', 'Authorization'], // Ensure correct headers
+    credentials: true, // Allow credentials if needed
 };
 
 app.use(cors(corsOptions));
