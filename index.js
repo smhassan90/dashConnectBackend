@@ -30,6 +30,9 @@ mongoose.connect(url)
         console.log("Error in MongoDB connection --->", err);
     });
 
+    app.get('/', (req, res) => {
+        res.send("🎉 Deployment Successful! Your backend is live on Vercel. 🚀");
+    });
 
 //TOOD: add /v1/
 app.use('/api/employee/v1',employeeRoute)
