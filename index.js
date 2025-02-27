@@ -60,22 +60,31 @@ const path = require('path');
 const authRoute = require('./Routes/userAuthApi');
 const intgrationRoute = require('./Routes/integrationApi');
 const employeeRoute = require('./Routes/employeeApi');
+const { dbConnect } = require('./utils/dbConnect');
 
 // MongoDB Connection URL
 const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.t9ett.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
+const corsOptions = {
+    origin: 'http://localhost:3000',
+    credentials:true,
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ **MongoDB Connection with Timeout Fix**
-mongoose
-  .connect(url, {
-    serverSelectionTimeoutMS: 30000, // 30s timeout fix
-  })
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.log("❌ MongoDB Connection Error:", err));
+// mongoose
+//   .connect(url, {
+//     serverSelectionTimeoutMS: 30000, // 30s timeout fix
+//   })
+//   .then(() => console.log("✅ MongoDB Connected"))
+//   .catch((err) => console.log("❌ MongoDB Connection Error:", err));
+
+
+dbConnect()
 
 // Routes Setup
 app.use('/api/employee/v1', employeeRoute);

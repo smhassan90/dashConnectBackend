@@ -16,6 +16,9 @@ const cron = require("node-cron");
 const path = require("path");
 const fs = require("fs");
 const csvParser = require("csv-parser");
+const { NOTFOUND, OK, INTERNALERROR, UNAUTHORIZED } = require("../constant/httpStatus");
+const { responseMessages } = require("../constant/responseMessages");
+const { generateToken } = require("../utils/generateToken");
 
 // create --> user API
 router.post("/register", async (req, res) => {
@@ -58,35 +61,47 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
-    if (user) {
-      const checkPassword = bcrypt.compareSync(password, user.password);
-
-      if (checkPassword) {
-        const token = jwt.sign(
-          { id: user._id, email: user.email },
-          process.env.JWT_SECRET,
-        );
-        res.status(200).send({
-          status: 200,
-          user: {
-            id: user._id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            companyName: user.companyName,
-          },
-          message: "Login successful",
-          token,
-        });
-      } else {
-        res.status(401).send({ status: 401, message: "Incorrect Password" });
-      }
-    } else {
-      res.status(404).send({ status: 404, message: "User not found" });
+    if (!user) {
+      return res.status(NOTFOUND).send({
+        status: false,
+        error: true,
+        message: responseMessages.USER_NOT_FOUND,
+      });
     }
+
+    const checkPassword = bcrypt.compareSync(password, user.password);
+
+    if (!checkPassword) {
+      return res.status(UNAUTHORIZED).send({
+        status: false,
+        error: true,
+        message: responseMessages.INVALID,
+      });
+    }
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+    };
+    const token = await generateToken(user);
+    res.cookie("token", token, cookieOptions);
+
+    return res.status(OK).send({
+      status: true,
+      error: false,
+      message: responseMessages.LOGIN_SUCEESS,
+      data:{
+        ...user._doc,
+        token
+      }
+    });
+
   } catch (error) {
-    console.error("loginError", error);
-    res.status(500).send({ status: 500, error: "Internal Server Error" });
+    return res.status(INTERNALERROR).send({
+      status: false,
+      error: true,
+      message: error.message,
+    });
   }
 });
 
@@ -163,7 +178,7 @@ router.post(
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // create --> Forgot password and Reset password API
@@ -178,7 +193,7 @@ router.post("/forgotPassword", async (req, res) => {
 
       const updateData = await User.updateOne(
         { _id: user._id },
-        { $set: { token: token } },
+        { $set: { token: token } }
       );
 
       await sendMail(user.email, token);
@@ -208,7 +223,7 @@ router.post("/resetPassword", async (req, res) => {
       const updateData = await User.findByIdAndUpdate(
         { _id: user._id },
         { $set: { password: hashedPassword, token: "" } },
-        { new: true },
+        { new: true }
       );
       res
         .status(200)
