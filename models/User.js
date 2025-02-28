@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
@@ -27,10 +27,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "owner",
     },
-    companyName: {
+    company: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Company",
       required: false,
+    },
+    loginStatus:{
+      type:'String',
+      default:"InActive",
+      enum:['Active','InActive']
     },
     token: {
       type: String,
@@ -42,4 +47,5 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-module.exports = mongoose.model("User", userSchema);
+const userModel = mongoose.model("User", userSchema);
+export default userModel

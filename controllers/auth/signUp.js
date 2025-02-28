@@ -1,7 +1,8 @@
-const { FORBIDDEN, OK } = require("../constant/httpStatus.js");
-const User = require("../models/User");
-const Company = require("../models/Company");
-const bcryptjs = require("bcryptjs");
+import { FORBIDDEN, OK } from "../../constant/httpStatus.js";
+import bcryptjs from "bcryptjs";
+import Company from "../../models/Company.js";
+import User from "../../models/User.js";
+import { responseMessages } from "../../constant/responseMessages.js";
 
 export const signUp = async (req, res) => {
   try {
@@ -13,7 +14,14 @@ export const signUp = async (req, res) => {
       password,
       confirmPassword,
     } = req.body;
-    if ( !firstName || !lastName || !email || !companyName || !password || !confirmPassword ) {
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !companyName ||
+      !password ||
+      !confirmPassword
+    ) {
       return res.status(FORBIDDEN).send({
         status: false,
         error: true,

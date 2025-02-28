@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose'
 
 const companySchema = new mongoose.Schema({
   companyName: {
@@ -6,14 +6,13 @@ const companySchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  updateDate: {
-    type: Date,
-    default: Date.now,
-  },
   Status: {
     type: Number,
     default: 1,
   },
+},{
+  timestamps:true
 });
 
-module.exports = mongoose.model("Company", companySchema);
+const companyModel = mongoose.model("Company", companySchema);
+export default companyModel
