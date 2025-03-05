@@ -1,8 +1,8 @@
-const mongoose = require("mongoose");
+// const mongoose = require("mongoose");
 
-const TableStructureSchema = new mongoose.Schema({
-  tableName: { type: String, required: true },
-  columns: { type: Map, of: String, required: true },
-});
+// const TableStructureSchema = new mongoose.Schema({
+//   tableName: { type: String, required: true },
+//   columns: { type: Map, of: String, required: true },
+// });
 
-module.exports = mongoose.model("TableStructure", TableStructureSchema);
+// module.exports = mongoose.model("TableStructure", TableStructureSchema);

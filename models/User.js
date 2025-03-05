@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
@@ -36,10 +36,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    forgot_password_expiry: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,
   },
 );
 
-module.exports = mongoose.model("User", userSchema);
+const userModel = mongoose.model("User", userSchema);
+export default userModel;
