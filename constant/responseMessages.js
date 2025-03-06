@@ -18,4 +18,5 @@ export const responseMessages = {
     ACUITY_CONNECTION_SUCCESS:"Acuity Connection Success",
     ACUITY_CONNECTION_FAILED:"Acuity Connection Failed",
     INVALID_CONNECTION_TYPE:"Invalid Connection Type",
+    CHECK_EMAIL:"Please Check Your Email",
 }

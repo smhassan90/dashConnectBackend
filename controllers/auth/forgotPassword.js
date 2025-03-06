@@ -19,6 +19,7 @@ export const forgotPassword = async(req,res) =>{
             })
         }
 
+
         const otp = generateOtp()
         const expiryDate = new Date(Date.now() + 60 * 60 * 1000);
 
@@ -26,12 +27,11 @@ export const forgotPassword = async(req,res) =>{
             token:otp,
             forgot_password_expiry: new Date(expiryDate).toISOString()
         })
-
         await sendEmail({
             sendTo:email,
             subject:"Forgot Password",
             html: forgotPasswordTemplate({
-                name: user.name,
+                name: user.firstName,
                 otp: otp
             })
         })
@@ -42,6 +42,7 @@ export const forgotPassword = async(req,res) =>{
         })
 
     } catch (error) {
+        console.log(error)
         return res.status(INTERNALERROR).json({
             message : error.message || error,
             error : true,
