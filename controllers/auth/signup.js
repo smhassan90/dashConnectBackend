@@ -10,7 +10,7 @@ export const signUp = async (req, res) => {
       firstName,
       lastName,
       email,
-      companyName,
+      company,
       password,
       confirmPassword,
     } = req.body;
@@ -18,7 +18,7 @@ export const signUp = async (req, res) => {
       !firstName ||
       !lastName ||
       !email ||
-      !companyName ||
+      !company ||
       !password ||
       !confirmPassword
     ) {
@@ -46,7 +46,7 @@ export const signUp = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashpassword = await bcrypt.hash(password, salt);
 
-    const findCompany = await companyModal.findOne({ companyName });
+    const findCompany = await companyModal.findOne({ company });
     if (findCompany) {
       return res.status(FORBIDDEN).send({
         status: false,
@@ -56,7 +56,7 @@ export const signUp = async (req, res) => {
     }
 
     const companyPayload = {
-      companyName,
+      companyName: company,
     };
 
     const newCompany = new companyModal(companyPayload);
@@ -67,7 +67,7 @@ export const signUp = async (req, res) => {
       lastName,
       email,
       password: hashpassword,
-      companyName:newCompany._id,
+      company:newCompany._id,
     };
 
     const newUser = new userModel(userPayload);

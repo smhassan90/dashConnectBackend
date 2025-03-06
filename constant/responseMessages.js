@@ -11,4 +11,8 @@ export const responseMessages = {
     OTP_EXPIRED:"OTP Expired",
     OTP_INVALID:"OTP Invalid", 
     OTP_SUCCESSFULLY:"OTP Verified Successfully",
+    COMPANY_NOT_FOUND:"Company Not Found",
+    INTEGRATION_NOT_FOUND:"Integration Not Found",
+    MYSQL_CONNECTION_SUCCESS:"Mysql Connection Success",
+    MYSQL_CONNECTION_FAILED:"Mysql Connection Failed",
 }

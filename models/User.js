@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "owner",
     },
-    companyName: {
+    company: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Company",
       required: false,
@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema(
     },
     forgot_password_expiry: {
       type: Date,
-      default: Date.now,
+      default: "",
     },
   },
   {

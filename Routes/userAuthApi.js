@@ -207,6 +207,6 @@ authRouter.put("/deleteCompanies",auth, deleteCompanies);
 
 // CSV file Upload
 // route (/api/user/v1/createSchema)
-authRouter.put("/deleteCompanies",auth, createSchema);
+authRouter.get("/createSchema", createSchema);
 
 export default authRouter
