@@ -15,4 +15,7 @@ export const responseMessages = {
     INTEGRATION_NOT_FOUND:"Integration Not Found",
     MYSQL_CONNECTION_SUCCESS:"Mysql Connection Success",
     MYSQL_CONNECTION_FAILED:"Mysql Connection Failed",
+    ACUITY_CONNECTION_SUCCESS:"Acuity Connection Success",
+    ACUITY_CONNECTION_FAILED:"Acuity Connection Failed",
+    INVALID_CONNECTION_TYPE:"Invalid Connection Type",
 }

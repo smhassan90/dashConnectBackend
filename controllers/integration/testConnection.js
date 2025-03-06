@@ -1,4 +1,4 @@
-import { FORBIDDEN, OK } from "../../constant/httpStatus.js";
+import { FORBIDDEN, INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatus.js";
 import { responseMessages } from "../../constant/responseMessages";
 import mysql from "mysql2";
 
@@ -56,7 +56,7 @@ export const testConnection = async (req, res) => {
                     success: true,
                 });
             } else {
-                return res.status(OK).json({
+                return res.status(FORBIDDEN).json({
                     message: responseMessages.MYSQL_CONNECTION_FAILED,
                     error: true,
                     success: false,
@@ -70,21 +70,32 @@ export const testConnection = async (req, res) => {
                         password: password,
                     },
                 });
-
-                return res.json({
-                    message: "Acuity connection successful, appointment data fetched",
+                return res.status(OK).json({
+                    message: responseMessages.ACUITY_CONNECTION_SUCCESS,
+                    error: false,
+                    success: true,
                     data: response.data,
                 });
             } catch (error) {
                 console.error("Error fetching Acuity appointments:", error.message);
-                return res
-                    .status(500)
-                    .json({ error: "Failed to fetch appointments from Acuity API" });
+                return res.status(FORBIDDEN).json({
+                    message: responseMessages.ACUITY_CONNECTION_FAILED,
+                    error: true,
+                    success: false,
+                });
             }
         } else {
-            return res.status(400).json({ error: "Invalid connection type" });
+            return res.status(NOTFOUND).json({
+                message: responseMessages.INVALID_CONNECTION_TYPE,
+                error: true,
+                success: false,
+            });
         }
     } catch (error) {
-
+        return res.status(INTERNALERROR).json({
+            message: error.message || error,
+            error: true,
+            success: false,
+        });
     }
 }

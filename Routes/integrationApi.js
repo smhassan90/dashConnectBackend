@@ -351,7 +351,7 @@
 // // create graph suggestion API
 // router.post("/sugestionOfGraph", tokenVerification, async (req, res) => {
 //   const { requiredGraph } = req.body;
-//   const customText = `I have given you the structure format of my database. You need to identify the required graph and return and provide 4-5 Analytical Graph and its description only`;
+//   const customText = `I have given you the structure format of my database. You need to identify the required graph and return and provide 3 Analytical Graph and its description only`;
 
 //   const userId = req.userIdFromToken;
 
