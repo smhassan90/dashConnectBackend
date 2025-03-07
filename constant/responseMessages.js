@@ -19,4 +19,7 @@ export const responseMessages = {
     ACUITY_CONNECTION_FAILED:"Acuity Connection Failed",
     INVALID_CONNECTION_TYPE:"Invalid Connection Type",
     CHECK_EMAIL:"Please Check Your Email",
+    INVALID_URL:"Invalid URL",
+    FAILED_FETCHING_TABLES:"Failed Fetching Tables",
+    CREDENTIAL_SAVED:"Credential Saved Successfully",
 }

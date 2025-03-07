@@ -14,7 +14,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const corsOptions = {
-    origin: 'https://datawise-six.vercel.app',
+    // origin: 'https://datawise-six.vercel.app',
+    origin: '*',
     credentials:true,
 };
 

@@ -27,9 +27,9 @@ const integrationSchema = new mongoose.Schema({
         required: true
     },
 },
-{
-    timestamps: true,
-});
+    {
+        timestamps: true,
+    });
 
 const integrationModel = mongoose.model("Integration", integrationSchema);
 export default integrationModel;

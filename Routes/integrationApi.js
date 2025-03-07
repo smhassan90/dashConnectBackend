@@ -9,6 +9,9 @@ import OpenAI from "openai";
 import axios from "axios";
 import dotenv from "dotenv";
 import { suggestionGraph } from "../controllers/integration/suggestionGraph.js";
+import { testConnection } from "../controllers/integration/testConnection.js";
+import { saveIntegration } from "../controllers/integration/saveIntegration.js";
+import { MetaIntegrationDetails } from "../controllers/integration/metaIntegrationDetails.js";
 dotenv.config();
 
 const integrationRouter = express.Router();
@@ -19,6 +22,9 @@ const openai = new OpenAI({
 });
 
 integrationRouter.post('/sugestionOfGraph',auth,suggestionGraph)
+integrationRouter.post('/testConnectionIntegration',auth,testConnection)
+integrationRouter.post('/saveIntegration',auth,saveIntegration)
+integrationRouter.post('/metaIntegrationDetails',auth,MetaIntegrationDetails)
 
 
 export default integrationRouter;

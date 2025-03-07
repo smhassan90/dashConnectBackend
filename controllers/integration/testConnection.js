@@ -1,5 +1,5 @@
 import { FORBIDDEN, INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatus.js";
-import { responseMessages } from "../../constant/responseMessages";
+import { responseMessages } from "../../constant/responseMessages.js";
 import mysql from "mysql2";
 
 function testDbConnection(username, password, url) {
@@ -38,8 +38,8 @@ function testDbConnection(username, password, url) {
 }
 export const testConnection = async (req, res) => {
     try {
-        const { platform, username, password, url } = req.body;
-        if (!platform || !username || !password || !url) {
+        const { integrationName, platformName, username, password, url } = req.body;
+        if (!platformName || !integrationName || !username || !password || !url) {
             return res.status(FORBIDDEN).json({
                 message: responseMessages.INVALID_FIELD,
                 error: true,
@@ -47,7 +47,7 @@ export const testConnection = async (req, res) => {
             });
         }
 
-        if (platform.toLowerCase() === "mysql") {
+        if (platformName.toLowerCase() === "mysql") {
             const isConnected = await testDbConnection(username, password, url);
             if (isConnected) {
                 return res.status(OK).json({
@@ -62,7 +62,7 @@ export const testConnection = async (req, res) => {
                     success: false,
                 });
             }
-        } else if (platform.toLowerCase() === "acuity") {
+        } else if (platformName.toLowerCase() === "acuity") {
             try {
                 const response = await axios.get(`${url}/appointments?max=30`, {
                     auth: {
