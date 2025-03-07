@@ -32,7 +32,7 @@ function testDbConnection(username, password, url) {
                 console.log("MySQL connection successful");
                 resolve(true);
             }
-            connection.end(); // Always close the connection
+            connection.end();
         });
     });
 }
