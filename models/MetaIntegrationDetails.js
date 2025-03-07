@@ -1,21 +1,26 @@
 import mongoose from "mongoose";
 
-const metaIntegrationDetail = new mongoose.Schema({
-    integration_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Integration",
-        required: true,
+const metaIntegrationDetail = new mongoose.Schema(
+    {
+        integrationId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Integration",
+            required: true,
+        },
+        description: {
+            type: String,
+            required: true,
+        },
+        tableName: {
+            type: String,
+            required: true,
+        },
+        columns: { type: Map, of: String },
     },
-    table_name:{
-        type: String,
-        required: true
-    },
-    columns: { type: Map, of: String }, // Use Map to store key-value pairs
-    description: String,
-},
-{
-    timestamps: true,
-});
+    {
+        timestamps: true,
+    }
+);
 
-
-// module.exports = mongoose.model("metaIntegrationDetail", metaIntegrationDetail);
+const metaIntegrationModel = mongoose.model("MetaIntegrationDetail", metaIntegrationDetail);
+export default metaIntegrationModel;

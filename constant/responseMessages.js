@@ -22,4 +22,9 @@ export const responseMessages = {
     INVALID_URL:"Invalid URL",
     FAILED_FETCHING_TABLES:"Failed Fetching Tables",
     CREDENTIAL_SAVED:"Credential Saved Successfully",
+    INTEGRATION_NOT_FOUND:"Integration Not Found",
+    PROVIDE_TABLES:"Please Provide Tables",
+    PROVIDE_NAME_DESC:"Please Provide Table Name and Description",
+    TABLE_NOT_FOUND:"Table Not Found",
+    FAILED_SAVED_META_INTEGRATION:"Failed Saved Meta Integration",
 }
