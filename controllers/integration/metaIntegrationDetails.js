@@ -113,11 +113,11 @@ export const MetaIntegrationDetails = async (req, res) => {
                 errors
             },
         });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({
-            message: "An error occurred while processing.",
-            error: err.message,
+    } catch (error) {
+        return res.status(INTERNALERROR).json({
+            message: error.message || error,
+            error: true,
+            success: false,
         });
     }
 }

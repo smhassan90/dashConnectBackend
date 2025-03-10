@@ -1,6 +1,8 @@
 import { FORBIDDEN, INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatus.js";
 import { responseMessages } from "../../constant/responseMessages.js";
+import integrationModel from "../../models/IntegrationCredentials.js";
 import mysql from "mysql2";
+import userModel from "../../models/User.js";
 
 function testDbConnection(username, password, url) {
     const match = url.match(/jdbc:mysql:\/\/(.*):(\d+)\/(.*)/);
@@ -50,11 +52,40 @@ export const testConnection = async (req, res) => {
         if (platformName.toLowerCase() === "mysql") {
             const isConnected = await testDbConnection(username, password, url);
             if (isConnected) {
+                const existingCredential = await integrationModel.findOne({
+                    url,
+                    username,
+                    password,
+                });
+                if(existingCredential){
+                    return res.status(FORBIDDEN).json({
+                        message: responseMessages.CREDENTIAL_EXISTS,
+                        error: true,
+                        success: false,
+                    });
+                }
+                const userId = req.userId;
+                const user = await userModel.findById(userId);
+                const companyId = user.company;
+                const newIntegrationCredentials = new integrationModel({
+                    companyId,
+                    platformName,
+                    integrationName,
+                    url,
+                    username,
+                    password,
+                });
+                await newIntegrationCredentials.save();
                 return res.status(OK).json({
-                    message: responseMessages.MYSQL_CONNECTION_SUCCESS,
+                    message: responseMessages.CREDENTIAL_SAVED,
                     error: false,
                     success: true,
                 });
+                // return res.status(OK).json({
+                //     message: responseMessages.MYSQL_CONNECTION_SUCCESS,
+                //     error: false,
+                //     success: true,
+                // });
             } else {
                 return res.status(FORBIDDEN).json({
                     message: responseMessages.MYSQL_CONNECTION_FAILED,

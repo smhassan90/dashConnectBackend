@@ -4,7 +4,7 @@ import mysql from "mysql2";
 import integrationModel from "../../models/IntegrationCredentials.js";
 import userModel from "../../models/User.js";
 
-export const saveIntegration = async (req, res) => {
+export const FetchTables = async (req, res) => {
     try {
         const { platformName, integrationName, url, username, password } = req.body;
         if (!platformName || !integrationName || !url || !username || !password) {
@@ -14,7 +14,6 @@ export const saveIntegration = async (req, res) => {
                 success: false,
             });
         }
-        // const urlRegex = /^jdbc:mysql:\/\/([^:/]+):(\d+)\/(.+)$/;
         const urlRegex = /jdbc:mysql:\/\/(.*):(\d+)\/(.*)/
         const match = url.match(urlRegex);
 
@@ -53,40 +52,13 @@ export const saveIntegration = async (req, res) => {
                 const tableNames = results.map((row) => Object.values(row)[0]);
                 return res.status(OK).json({
                     message: responseMessages.FETCH_TABLES_SUCCESS,
-                    error: true,
-                    success: false,
+                    error: false,
+                    success: true,
                     data: tableNames
                 });
             });
             return
         }
-        const userId = req.userId;
-
-        const user = await userModel.findById(userId);
-        if (!user) {
-            return res.status(NOTFOUND).send({
-                status: false,
-                error: true,
-                message: responseMessages.USER_NOT_FOUND,
-            });
-        }
-        const companyId = user.company;
-
-        const newIntegrationCredentials = new integrationModel({
-            companyId,
-            platformName,
-            integrationName,
-            url,
-            username,
-            password,
-        });
-        await newIntegrationCredentials.save();
-
-        return res.status(OK).json({
-            message: responseMessages.CREDENTIAL_SAVED,
-            error: false,
-            success: true,
-        });
     } catch (error) {
         console.log("Error in /integrationCredential API:", error.message);
         return res.status(INTERNALERROR).json({
