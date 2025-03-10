@@ -74,15 +74,22 @@ export const suggestQuestion = async (req, res) => {
         // });
         // const aiContent = aiResponse.choices[0].message.content;
         const aiContent = SuggestQuestionData;
-        const cleanedArray = aiContent
+        const pointsArray = aiContent
             .split("\n")
-            .map(point => point.split(":").slice(1).join(":").trim())
-            .filter(item => item !== "");
+            .filter(point => point.trim() !== "") // Remove empty lines
+            .map(point => {
+                const parts = point.split(":"); // Split title and description
+                return {
+                    title: parts[0]?.trim() || "",
+                    description: parts.slice(1).join(":").trim() || ""
+                };
+            });
+
         return res.status(OK).send({
             status: true,
             error: false,
             message: responseMessages.SUGGEST_QUESTION_SUCCESS,
-            data: cleanedArray
+            data: aiContent
         });
     } catch (error) {
         return res.status(INTERNALERROR).json({

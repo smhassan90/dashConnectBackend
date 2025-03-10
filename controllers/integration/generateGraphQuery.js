@@ -183,7 +183,7 @@ function transformToLineGraphData(data) {
 
     const response = {
         labels: uniqueLabels,
-        datasets,
+        datasets,x
     };
 
     console.log("After:", JSON.stringify(response, null, 2));
