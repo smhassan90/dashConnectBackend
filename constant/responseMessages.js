@@ -32,4 +32,5 @@ export const responseMessages = {
     INTEGRATION_NOT_FOUND:"Integration Not Found",
     INTEGRATION_DATA_NOT_FOUND:"Meta Integration data not found.",
     SUGGEST_QUESTION_SUCCESS:"Suggest Question Success",
+    QUERY_DATA:"Query Data Successfully",
 }

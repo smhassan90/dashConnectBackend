@@ -62,7 +62,6 @@ export const suggestQuestion = async (req, res) => {
 
         // Step 4: Create the final result message
         let resultMessage = customText;
-
         findMetaIntegration.forEach((table) => {
             // let responseMessage = ` + ${requiredGraph} Here is all the data of Table: ${table.tableName}`;
             resultMessage += `Integration ID: ${table.integrationId

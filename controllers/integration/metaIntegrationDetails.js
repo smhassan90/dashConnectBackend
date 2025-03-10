@@ -4,6 +4,20 @@ import integrationModel from "../../models/IntegrationCredentials.js";
 import metaIntegrationModel from "../../models/MetaIntegrationDetails.js";
 import userModel from "../../models/User.js";
 import mysql from "mysql2";
+import dotenv from "dotenv";
+dotenv.config();
+
+const pool = mysql.createPool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT),
+    queueLimit: 0,
+    connectTimeout: parseInt(process.env.DB_TIMEOUT),
+}).promise();
 
 export const MetaIntegrationDetails = async (req, res) => {
     try {
@@ -42,14 +56,6 @@ export const MetaIntegrationDetails = async (req, res) => {
         }
         let responseData = [];
         let errors = [];
-        const pool = mysql.createPool({
-            host: "66.135.60.203",
-            port: 3308,
-            user: "kamran",
-            password: "Pma_109c",
-            database: "dbtabib",
-            connectTimeout: 100000,
-        }).promise();
         for (const table of tables) {
             try {
                 const { tableName, description } = table;
