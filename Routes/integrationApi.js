@@ -7,6 +7,8 @@ import { MetaIntegrationDetails } from "../controllers/integration/metaIntegrati
 import { suggestQuestion } from "../controllers/integration/suggestQuestion.js";
 import { FetchTables } from "../controllers/integration/fetchTables.js";
 import { genrateGraphQuery } from "../controllers/integration/generateGraphQuery.js";
+import { saveStory } from "../controllers/integration/saveStory.js";
+import { getAllStories } from "../controllers/integration/getAllStories.js";
 dotenv.config();
 
 const integrationRouter = express.Router();
@@ -21,6 +23,8 @@ integrationRouter.post('/fetchTables',auth,FetchTables)
 integrationRouter.post('/metaIntegrationDetails',auth,MetaIntegrationDetails)
 integrationRouter.post('/sugestionQuestion',auth,suggestQuestion)
 integrationRouter.post('/genrateGraphQuery',auth,genrateGraphQuery)
+integrationRouter.post('/saveStory',auth,saveStory)
+integrationRouter.get('/getAllStories',auth,getAllStories)
 
 
 export default integrationRouter;

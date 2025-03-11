@@ -101,10 +101,10 @@ export const genrateGraphQuery = async (req, res) => {
                 error: false,
                 success: true,
                 message: responseMessages.QUERY_DATA,
-                data: [
-                    query,
-                    results
-                ]
+                data: {
+                    query: query,
+                    data: results
+                }
             });
         });
 
@@ -183,7 +183,7 @@ function transformToLineGraphData(data) {
 
     const response = {
         labels: uniqueLabels,
-        datasets,x
+        datasets, x
     };
 
     console.log("After:", JSON.stringify(response, null, 2));
