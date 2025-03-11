@@ -23,14 +23,14 @@ export const signUp = async (req, res) => {
       !confirmPassword
     ) {
       return res.status(FORBIDDEN).send({
-        status: false,
+        success: false,
         error: true,
         message: responseMessages.INVALID_FIELD,
       });
     }
     if (password !== confirmPassword) {
       return res.status(FORBIDDEN).send({
-        status: false,
+        success: false,
         error: true,
         message: responseMessages.PASSWORD_NOT_MATCH,
       });
@@ -38,7 +38,7 @@ export const signUp = async (req, res) => {
     const findEmail = await userModel.findOne({ email });
     if (findEmail) {
       return res.status(FORBIDDEN).send({
-        status: false,
+        success: false,
         error: true,
         message: responseMessages.USER_EXIST,
       });
@@ -49,7 +49,7 @@ export const signUp = async (req, res) => {
     const findCompany = await companyModal.findOne({ company });
     if (findCompany) {
       return res.status(FORBIDDEN).send({
-        status: false,
+        success: false,
         error: true,
         message: responseMessages.ALREADY_EXIST,
       });
@@ -74,14 +74,14 @@ export const signUp = async (req, res) => {
     const saveUser = await newUser.save();
 
     return res.status(OK).send({
-      status: true,
+      success: true,
       error: false,
       message: responseMessages.USER_CREATED,
       data: saveUser,
     });
   } catch (error) {
     return res.status(INTERNALERROR).send({
-      status: false,
+      success: false,
       error: true,
       message: error.message,
     });

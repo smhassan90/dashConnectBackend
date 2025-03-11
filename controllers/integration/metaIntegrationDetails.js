@@ -28,7 +28,7 @@ export const MetaIntegrationDetails = async (req, res) => {
         const user = await userModel.findById(userId).select("company");
         if (!user) {
             return res.status(NOTFOUND).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.USER_NOT_FOUND,
             });
@@ -40,7 +40,7 @@ export const MetaIntegrationDetails = async (req, res) => {
         });
         if (!findIntegration) {
             return res.status(NOTFOUND).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.INTEGRATION_NOT_FOUND,
             });
@@ -49,7 +49,7 @@ export const MetaIntegrationDetails = async (req, res) => {
 
         if (!tables || !Array.isArray(tables)) {
             return res.status(FORBIDDEN).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.PROVIDE_TABLES,
             });
@@ -62,7 +62,7 @@ export const MetaIntegrationDetails = async (req, res) => {
                 if (!tableName || !description) {
                     errors.push({
                         tableName: tableName || "Unknown",
-                        status: false,
+                        success: false,
                         error: true,
                         message: responseMessages.PROVIDE_NAME_DESC,
                     });
@@ -73,7 +73,7 @@ export const MetaIntegrationDetails = async (req, res) => {
                 if (tableExists.length === 0) {
                     errors.push({
                         tableName,
-                        status: false,
+                        success: false,
                         error: true,
                         message: `${tableName} ${responseMessages.TABLE_NOT_FOUND}`,
                     });
@@ -96,7 +96,7 @@ export const MetaIntegrationDetails = async (req, res) => {
                 await metaDetails.save();
                 responseData.push({
                     tableName,
-                    status: true,
+                    success: true,
                     error: false,
                     message: `Metadata for ${tableName} saved successfully`,
                 });
@@ -104,7 +104,7 @@ export const MetaIntegrationDetails = async (req, res) => {
             } catch (error) {
                 errors.push({
                     tableName: table.tableName || "Unknown",
-                    status: false,
+                    success: false,
                     error: true,
                     message: responseMessages.FAILED_SAVED_META_INTEGRATION,
                 });
@@ -112,7 +112,7 @@ export const MetaIntegrationDetails = async (req, res) => {
         }
         res.status(OK).json({
             message: responseMessages.ALL_INTEGRATIONS_PROCESSED,
-            status: true,
+            success: true,
             error: false,
             data: {
                 responseData,

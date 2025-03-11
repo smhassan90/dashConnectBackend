@@ -20,7 +20,7 @@ export const suggestQuestion = async (req, res) => {
         const user = await userModel.findById(userId).select("company");
         if (!user) {
             return res.status(NOTFOUND).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.USER_NOT_FOUND,
             });
@@ -28,7 +28,7 @@ export const suggestQuestion = async (req, res) => {
         const companyId = user.company;
         if (!companyId) {
             return res.status(NOTFOUND).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.COMPANY_NOT_FOUND,
             });
@@ -41,7 +41,7 @@ export const suggestQuestion = async (req, res) => {
 
         if (!findIntegration) {
             return res.status(NOTFOUND).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.INTEGRATION_NOT_FOUND,
             });
@@ -54,7 +54,7 @@ export const suggestQuestion = async (req, res) => {
 
         if (!findMetaIntegration.length) {
             return res.status(NOTFOUND).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.INTEGRATION_DATA_NOT_FOUND,
             });
@@ -86,7 +86,7 @@ export const suggestQuestion = async (req, res) => {
             });
 
         return res.status(OK).send({
-            status: true,
+            success: true,
             error: false,
             message: responseMessages.SUGGEST_QUESTION_SUCCESS,
             data: aiContent

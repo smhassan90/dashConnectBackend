@@ -32,7 +32,7 @@ export const genrateGraphQuery = async (req, res) => {
         const user = await userModel.findById(userId).select("company");
         if (!user) {
             return res.status(NOTFOUND).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.USER_NOT_FOUND,
             });
@@ -40,7 +40,7 @@ export const genrateGraphQuery = async (req, res) => {
         const companyId = user.company;
         if (!companyId) {
             return res.status(NOTFOUND).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.COMPANY_NOT_FOUND,
             });
@@ -50,7 +50,7 @@ export const genrateGraphQuery = async (req, res) => {
         });
         if (!findIntegration) {
             return res.status(NOTFOUND).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.INTEGRATION_NOT_FOUND,
             });
@@ -62,7 +62,7 @@ export const genrateGraphQuery = async (req, res) => {
 
         if (!findMetaIntegration.length) {
             return res.status(NOTFOUND).send({
-                status: false,
+                success: false,
                 error: true,
                 message: responseMessages.INTEGRATION_DATA_NOT_FOUND,
             });

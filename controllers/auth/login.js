@@ -10,7 +10,7 @@ export const login = async (req, res) => {
     const user = await userModel.findOne({ email });
     if (!user) {
       return res.status(NOTFOUND).send({
-        status: false,
+        success: false,
         error: true,
         message: responseMessages.USER_NOT_FOUND,
       });
@@ -18,7 +18,7 @@ export const login = async (req, res) => {
     const checkPassword = bcrypt.compareSync(password, user.password);
     if (!checkPassword) {
       return res.status(UNAUTHORIZED).send({
-        status: false,
+        success: false,
         error: true,
         message: responseMessages.INVALID,
       });
@@ -31,7 +31,7 @@ export const login = async (req, res) => {
     const token = await generateToken(user);
     res.cookie("token", token, cookieOptions);
     return res.status(OK).send({
-      status: true,
+      success: true,
       error: false,
       message: responseMessages.LOGIN_SUCEESS,
       data: {
@@ -41,7 +41,7 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     return res.status(INTERNALERROR).send({
-      status: false,
+      success: false,
       error: true,
       message: error.message,
     });
