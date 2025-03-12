@@ -90,7 +90,7 @@ export const genrateGraphQuery = async (req, res) => {
         //     messages: [{ role: "user", content: resultMessage }],
         // });
         // const query = cleanSQLQuery(aiResponse.choices[0].message.content)
-        const query = "SELECT t_doctor.ID, t_doctor.NAME, SUM(t_appointment.charges) AS total_income FROM t_doctor JOIN t_appointment ON t_doctor.ID = t_appointment.DOCTOR_ID GROUP BY t_doctor.ID, t_doctor.NAME";
+        const query = "SELECT t_doctor.ID, t_doctor.NAME, t_doctor.AGE, t_doctor.USERNAME, SUM(t_appointment.charges) AS total_income FROM t_doctor JOIN t_appointment ON t_doctor.ID = t_appointment.DOCTOR_ID GROUP BY t_doctor.ID, t_doctor.NAME";
 
         pool.query(query, (error, results) => {
             if (error) {
