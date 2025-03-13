@@ -27,7 +27,7 @@ const pool = mysql.createPool({
 
 export const reRunGraphQuery = async (req, res) => {
     try {
-        const { newQuery } = req.body;
+        const { newQuery, requiredGraph } = req.body;
         const userId = req.userId;
         const user = await userModel.findById(userId).select("company");
         if (!user) {
@@ -76,10 +76,19 @@ export const reRunGraphQuery = async (req, res) => {
                 });
             }
         });
-        pool.query(newQuery, (error, results) => {
+        pool.query(newQuery, (error, results, fields) => {
             if (error) {
                 console.error("Database query error:", error);
                 return;
+            }
+            if (requiredGraph !== "Report") {
+                if (fields.length > 3) {
+                    return res.status(BADREQUEST).json({
+                        success: false,
+                        error: true,
+                        message: responseMessages.ONLY_3_COLUMNS,
+                    });
+                }
             }
             return res.status(OK).json({
                 error: false,
@@ -87,6 +96,7 @@ export const reRunGraphQuery = async (req, res) => {
                 message: responseMessages.QUERY_DATA,
                 data: {
                     query: newQuery,
+                    resultType: requiredGraph,
                     data: results
                 }
             });

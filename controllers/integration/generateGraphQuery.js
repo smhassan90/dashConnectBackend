@@ -103,6 +103,7 @@ export const genrateGraphQuery = async (req, res) => {
                 message: responseMessages.QUERY_DATA,
                 data: {
                     query: query,
+                    resultType:requiredGraph,
                     data: results
                 }
             });

@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const storySchema = new mongoose.Schema({
+    storyName: {
+        type: String,
+        required: true,
+        unique:true
+    },
     companyId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Company",
@@ -12,7 +17,7 @@ const storySchema = new mongoose.Schema({
     },
     resultType: {
         type: String,
-        enum: ["lineGraph", "barChart", "report"],
+        enum: ["Line Chart", "Bar Chart", "Report"],
         required: true
     }
 },

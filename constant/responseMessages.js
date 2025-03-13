@@ -35,5 +35,6 @@ export const responseMessages = {
     QUERY_DATA:"Query Data Successfully",
     ALL_INTEGRATIONS_PROCESSED:"All Meta Integration Saved",
     STORY_SAVED_SUCCESS:"Story Save Successfully",
-    GET_ALL_STORY:"Get All Stories Successfully"
+    GET_ALL_STORY:"Get All Stories Successfully",
+    ONLY_3_COLUMNS:"Only 3 columns can be requested."
 }
