@@ -36,5 +36,12 @@ export const responseMessages = {
     ALL_INTEGRATIONS_PROCESSED:"All Meta Integration Saved",
     STORY_SAVED_SUCCESS:"Story Save Successfully",
     GET_ALL_STORY:"Get All Stories Successfully",
-    ONLY_3_COLUMNS:"Only 3 columns can be requested."
+    ONLY_3_COLUMNS:"Only 3 columns can be requested.",
+    COMPANY_NOT_FOUND:"Company Not Found",
+    EMPLOYEE_CREATED:"Employee Created Successfully",
+    EMPLOYEE_NOT_FOUND:"Employee Not Found",
+    EMPLOYEE_DELETED:"Employee Delete Successfully",
+    UNAUTHORIZED:"You are Not Authorized",
+    EMPLOYEE_UPDATED:"Employee Updated Successfully",
+    STORY_BOARD_SAVED:"New Story Baord Created"
 }

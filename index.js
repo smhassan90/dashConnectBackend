@@ -6,6 +6,8 @@ import authRoute from './Routes/userAuthApi.js';
 import intgrationRoute from './Routes/integrationApi.js';
 import { dbConnect } from './utils/dbConnect.js';
 import { fileURLToPath } from 'url'
+import employeeRoute from './Routes/employeeApi.js';
+import storyRoute from './Routes/storyRoute.js';
 
 const app = express();
 dotenv.config();
@@ -28,7 +30,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 dbConnect()
 
 // Routes Setup
-// app.use('/api/employee/v1', employeeRoute);
+app.use('/api/employee/v1', employeeRoute);
+app.use('/api/story/v1', storyRoute);
 app.use('/api/integration/v1', intgrationRoute);
 app.use('/api/user/v1', authRoute);
 

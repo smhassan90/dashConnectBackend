@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
 const storySchema = new mongoose.Schema({
-    storyName: {
-        type: String,
+    storyBoardId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Company",
         required: true,
-        unique:true
     },
     companyId: {
         type: mongoose.Schema.Types.ObjectId,
