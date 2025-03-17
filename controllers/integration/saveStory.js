@@ -5,7 +5,7 @@ import storyModel from "../../models/Story.js";
 
 export const saveStory = async (req, res) => {
     try {
-        const {storyBoardId} = req.query
+        const {storyBoardId} = req.params
         const {storyName, query, resultType } = req.body;
         const userId = req.userId;
 

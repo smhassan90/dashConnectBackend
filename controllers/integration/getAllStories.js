@@ -21,7 +21,7 @@ const pool = mysql.createPool({
 export const getAllStories = async (req, res) => {
     try {
         const userId = req.userId;
-        const { storyBoardId } = req.query
+        const { storyBoardId } = req.params
         const user = await userModel.findById(userId).select("company");
         if (!user) {
             return res.status(NOTFOUND).send({

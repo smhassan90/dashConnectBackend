@@ -24,8 +24,8 @@ integrationRouter.post('/fetchTables',auth,FetchTables)
 integrationRouter.post('/metaIntegrationDetails',auth,MetaIntegrationDetails)
 integrationRouter.post('/sugestionQuestion',auth,suggestQuestion)
 integrationRouter.post('/genrateGraphQuery',auth,genrateGraphQuery)
-integrationRouter.post('/saveStory',auth,saveStory)
-integrationRouter.get('/getAllStories',auth,getAllStories)
+integrationRouter.post('/saveStory/:storyBoardId',auth,saveStory)
+integrationRouter.get('/getAllStories/:storyBoardId',auth,getAllStories)
 integrationRouter.post('/reRunQuery',auth,reRunGraphQuery)
 
 
