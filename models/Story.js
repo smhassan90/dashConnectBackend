@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const storySchema = new mongoose.Schema({
     storyBoardId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Company",
+        ref: "StoryBoard",
         required: true,
     },
     companyId: {

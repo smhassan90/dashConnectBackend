@@ -43,5 +43,8 @@ export const responseMessages = {
     EMPLOYEE_DELETED:"Employee Delete Successfully",
     UNAUTHORIZED:"You are Not Authorized",
     EMPLOYEE_UPDATED:"Employee Updated Successfully",
-    STORY_BOARD_SAVED:"New Story Baord Created"
+    STORY_BOARD_SAVED:"New Story Baord Created",
+    STORY_NOT_FOUND:"Story Board Not Found",
+    ADD_STORYBORD_USER:"Add StoryBoard for User",
+    GET_EMPLOYEES:"Get Employeess Successfullly"
 }

@@ -1,9 +1,10 @@
-import { INTERNALERROR, OK } from "../../constant/httpStatus.js";
+import { INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatus.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import storyModel from "../../models/Story.js";
 import userModel from "../../models/User.js";
 import mysql from "mysql2";
 import dotenv from "dotenv";
+import storyBoardModel from "../../models/storyBoard.js";
 dotenv.config();
 
 const pool = mysql.createPool({
@@ -20,7 +21,7 @@ const pool = mysql.createPool({
 export const getAllStories = async (req, res) => {
     try {
         const userId = req.userId;
-
+        const { storyBoardId } = req.query
         const user = await userModel.findById(userId).select("company");
         if (!user) {
             return res.status(NOTFOUND).send({
@@ -29,10 +30,15 @@ export const getAllStories = async (req, res) => {
                 message: responseMessages.USER_NOT_FOUND,
             });
         }
-
-        const companyId = user.company;
-
-        const findStories = await storyModel.find({ companyId })
+        const storyBoard = await storyBoardModel.findById(storyBoardId);
+        if (!storyBoard) {
+            return res.status(NOTFOUND).send({
+                success: false,
+                error: true,
+                message: responseMessages.STORY_NOT_FOUND,
+            });
+        }
+        const findStories = await storyModel.find({ storyBoardId })
         const result = await Promise.all(
             findStories.map((story) => {
                 return new Promise((resolve, reject) => {
@@ -43,7 +49,7 @@ export const getAllStories = async (req, res) => {
                         } else {
                             resolve({
                                 ...story._doc,
-                                data:results
+                                data: results
                             });
                         }
                     });

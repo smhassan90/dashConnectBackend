@@ -5,6 +5,7 @@ import storyModel from "../../models/Story.js";
 
 export const saveStory = async (req, res) => {
     try {
+        const {storyBoardId} = req.query
         const {storyName, query, resultType } = req.body;
         const userId = req.userId;
 
@@ -35,6 +36,7 @@ export const saveStory = async (req, res) => {
         }
 
         const newStory = new storyModel({
+            storyBoardId,
             storyName,
             companyId,
             query,
