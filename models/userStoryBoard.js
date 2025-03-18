@@ -6,7 +6,7 @@ const userStoryBoardSchema = new mongoose.Schema({
         ref: "Employee",
         required: true,
     },
-    StoryBoardId: {
+    storyBoardId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "StoryBoard",
         required: true,

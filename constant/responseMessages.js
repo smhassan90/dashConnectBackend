@@ -47,5 +47,6 @@ export const responseMessages = {
     GET_STORY_BOARDS:"Get Story Board Successfully",
     STORY_NOT_FOUND:"Story Board Not Found",
     ADD_STORYBORD_USER:"Add StoryBoard for User",
-    GET_EMPLOYEES:"Get Employeess Successfullly"
+    GET_EMPLOYEES:"Get Employeess Successfullly",
+    DELETE_STORY_BOARD:"Delete Story Board"
 }

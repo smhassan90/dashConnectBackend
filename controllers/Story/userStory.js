@@ -1,4 +1,4 @@
-import { INTERNALERROR, OK } from "../../constant/httpStatus.js";
+import { INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatus.js";
 import employeeModel from "../../models/Employee.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import userStoryBoardModel from "../../models/userStoryBoard.js";
@@ -7,7 +7,7 @@ import storyBoardModel from "../../models/storyBoard.js";
 
 export const addStoryForEmployee = async (req, res) => {
     try {
-        const { employeeId,StoryBoardId } = req.body;
+        const { employeeId,storyBoardId } = req.body;
         const userId = req.userId;
         const user = await userModel.findById(userId);
         if (!user) {
@@ -25,7 +25,7 @@ export const addStoryForEmployee = async (req, res) => {
                 message: responseMessages.EMPLOYEE_NOT_FOUND,
             });
         }
-        const storyBoard = await storyBoardModel.findById(StoryBoardId);
+        const storyBoard = await storyBoardModel.findById(storyBoardId);
         if (!storyBoard) {
             return res.status(NOTFOUND).send({
                 success: false,
@@ -35,7 +35,7 @@ export const addStoryForEmployee = async (req, res) => {
         }
         const Payload = {
             employeeId,
-            StoryBoardId
+            storyBoardId
         }
         const addUserStory = new userStoryBoardModel(Payload);
         const savedUserStory = await addUserStory.save();

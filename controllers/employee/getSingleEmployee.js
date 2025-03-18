@@ -5,8 +5,9 @@ import storyBoardModel from "../../models/storyBoard.js";
 import userModel from "../../models/User.js";
 import userStoryBoardModel from "../../models/userStoryBoard.js";
 
-export const getEmployee = async (req, res) => {
+export const getSingleEmployee = async (req, res) => {
     try {
+        const { employeeId } = req.params
         const userId = req.userId;
         const user = await userModel.findById(userId).select("company");
         if (!user) {
@@ -17,26 +18,22 @@ export const getEmployee = async (req, res) => {
             });
         }
         const companyId = user.company
-        const employees = await employeeModel.find({ companyId })
+        const employee = await employeeModel.findById(employeeId)
 
-        const findStoryBoardForEmployees = await Promise.all(employees.map(async (employee) => {
-            const userStoryBoards = await userStoryBoardModel.find({ employeeId: employee._id })
-            const storyBoardIds = userStoryBoards.map(story => story.storyBoardId)
-            const storyBoards = await storyBoardModel.find({ _id: { $in: storyBoardIds } }).select("storyBoardName");
-            return {
+        const userStoryBoards = await userStoryBoardModel.find({ employeeId: employee._id })
+        const storyBoardIds = userStoryBoards.map(story => story.storyBoardId)
+        const storyBoards = await storyBoardModel.find({ _id: { $in: storyBoardIds } }).select("storyBoardName");
+        return res.status(OK).send({
+            success: true,
+            error: false,
+            message: responseMessages.GET_EMPLOYEES,
+            data: {
                 ...employee._doc,
                 storyBoards: storyBoards.map(sb => ({
                     id: sb._id,
                     name: sb.storyBoardName
                 }))
-            };
-        }))
-
-        return res.status(OK).send({
-            success: true,
-            error: false,
-            message: responseMessages.GET_EMPLOYEES,
-            data: findStoryBoardForEmployees,
+            }
         });
     } catch (error) {
         return res.status(INTERNALERROR).send({
