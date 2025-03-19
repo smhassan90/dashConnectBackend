@@ -1,12 +1,13 @@
-import { FORBIDDEN, INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatus.js";
+import { ALREADYEXISTS, FORBIDDEN, INTERNALERROR, NOTALLOWED, NOTFOUND, OK } from "../../constant/httpStatus.js";
 import employeeModel from "../../models/Employee.js";
 import companyModal from "../../models/Company.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import userModel from "../../models/User.js";
+import bcrypt from "bcrypt";
 
 export const addEmployee = async (req, res) => {
     try {
-        const { employeeName, level } = req.body;
+        const { firstName, lastName, email, password, level } = req.body;
         const userId = req.userId;
         const user = await userModel.findById(userId).select("company");
         if (!user) {
@@ -17,7 +18,7 @@ export const addEmployee = async (req, res) => {
             });
         }
 
-        if (!employeeName || !level) {
+        if (!firstName || !lastName || !email || !password || !level) {
             return res.status(FORBIDDEN).send({
                 success: false,
                 error: true,
@@ -34,14 +35,35 @@ export const addEmployee = async (req, res) => {
                 message: responseMessages.COMPANY_NOT_FOUND,
             });
         }
-
+        if (level == 1) {
+            return res.status(NOTALLOWED).send({
+                success: false,
+                error: true,
+                message: responseMessages.PLEASE_CHOOSE_OTHER,
+            });
+        }
+        const findEmail = await userModel.findOne({ email })
+        if (findEmail) {
+            return res.status(ALREADYEXISTS).send({
+                success: false,
+                error: true,
+                message: responseMessages.EMAIL_FOUND,
+            });
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashpassword = await bcrypt.hash(password, salt);
+        const quota = level <= 3 ? 100 : 0
         const employeePayload = {
-            employeeName,
+            firstName,
+            lastName,
+            email,
+            password: hashpassword,
             level,
-            companyId,
+            quota,
+            company: companyId
         };
 
-        const newEmployee = new employeeModel(employeePayload);
+        const newEmployee = new userModel(employeePayload);
         const savedEmployee = await newEmployee.save();
 
         return res.status(OK).send({

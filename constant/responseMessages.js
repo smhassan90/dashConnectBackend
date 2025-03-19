@@ -48,5 +48,8 @@ export const responseMessages = {
     STORY_NOT_FOUND:"Story Board Not Found",
     ADD_STORYBORD_USER:"Add StoryBoard for User",
     GET_EMPLOYEES:"Get Employeess Successfullly",
-    DELETE_STORY_BOARD:"Delete Story Board"
+    DELETE_STORY_BOARD:"Delete Story Board",
+    NOT_AUTHORIZED:"You're Not Authorized Person",
+    EMAIL_FOUND:"Email Already Exist",
+    PLEASE_CHOOSE_OTHER:"Please Choose Other"
 }

@@ -61,7 +61,6 @@ export const signUp = async (req, res) => {
 
     const newCompany = new companyModal(companyPayload);
     const saveCompany = await newCompany.save();
-
     const userPayload = {
       firstName,
       lastName,

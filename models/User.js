@@ -23,9 +23,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    role: {
-      type: String,
-      default: "owner",
+    level: {
+      type: Number,
+      enum: [1, 2, 3, 4, 5],
+      default: 1,
+      required: true,
+    },
+    quota: {
+      type: Number,
+      default: 100
+    },
+    quotaUtilize: {
+      type: Number,
+      default: 0
     },
     company: {
       type: mongoose.Schema.Types.ObjectId,
