@@ -4,13 +4,11 @@ import { responseMessages } from "../../constant/responseMessages.js";
 import storyBoardModel from "../../models/storyBoard.js";
 import companyModal from "../../models/Company.js";
 import userModel from "../../models/User.js";
-import userStoryBoardModel from "../../models/userStoryBoard.js";
 
-export const deleteStoryForEmployee = async (req, res) => {
+export const getEmployeeStoryBoard = async (req, res) => {
     try {
-        const { storyBoardId, userId } = req.query
-        const userIdd = req.userId;
-        const user = await userModel.findById(userIdd).select("company");
+        const userId = req.userId;
+        const user = await userModel.findById(userId).select("company");
         if (!user) {
             return res.status(NOTFOUND).send({
                 success: false,
@@ -27,13 +25,14 @@ export const deleteStoryForEmployee = async (req, res) => {
                 message: responseMessages.COMPANY_NOT_FOUND,
             });
         }
-        const deleteStory = await userStoryBoardModel.findOneAndDelete({storyBoardId,userId})
+
+        const storyBoards = await storyBoardModel.find({ companyId })
 
         return res.status(OK).send({
             success: true,
             error: false,
-            message: responseMessages.DELETE_STORY_BOARD,
-            data: "",
+            message: responseMessages.GET_STORY_BOARDS,
+            data: storyBoards,
         });
     } catch (error) {
         return res.status(INTERNALERROR).send({

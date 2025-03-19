@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
 const userStoryBoardSchema = new mongoose.Schema({
-    employeeId: {
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Employee",
+        ref: "User",
         required: true,
     },
     storyBoardId: {

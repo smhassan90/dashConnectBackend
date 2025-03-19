@@ -18,11 +18,11 @@ export const getSingleEmployee = async (req, res) => {
             });
         }
         const companyId = user.company
-        const employee = await employeeModel.findById(employeeId)
+        const employee = await userModel.findById(employeeId)
 
-        const userStoryBoards = await userStoryBoardModel.find({ employeeId: employee._id })
+        const userStoryBoards = await userStoryBoardModel.find({ userId: employee._id })
         const storyBoardIds = userStoryBoards.map(story => story.storyBoardId)
-        const storyBoards = await storyBoardModel.find({ _id: { $in: storyBoardIds } }).select("storyBoardName");
+        const storyBoards = await storyBoardModel.find({ _id: { $in: storyBoardIds } });
         return res.status(OK).send({
             success: true,
             error: false,
@@ -30,8 +30,7 @@ export const getSingleEmployee = async (req, res) => {
             data: {
                 ...employee._doc,
                 storyBoards: storyBoards.map(sb => ({
-                    id: sb._id,
-                    name: sb.storyBoardName
+                    ...sb._doc
                 }))
             }
         });

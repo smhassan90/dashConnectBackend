@@ -7,9 +7,9 @@ import storyBoardModel from "../../models/storyBoard.js";
 
 export const addStoryForEmployee = async (req, res) => {
     try {
-        const { employeeId,storyBoardId } = req.body;
-        const userId = req.userId;
-        const user = await userModel.findById(userId);
+        const { userId ,storyBoardId } = req.body;
+        const userIdd = req.userId;
+        const user = await userModel.findById(userIdd);
         if (!user) {
             return res.status(NOTFOUND).send({
                 success: false,
@@ -17,7 +17,7 @@ export const addStoryForEmployee = async (req, res) => {
                 message: responseMessages.USER_NOT_FOUND,
             });
         }
-        const employee = await employeeModel.findById(employeeId);
+        const employee = await userModel.findById(userId);
         if (!employee) {
             return res.status(NOTFOUND).send({
                 success: false,
@@ -34,7 +34,7 @@ export const addStoryForEmployee = async (req, res) => {
             });
         }
         const Payload = {
-            employeeId,
+            userId,
             storyBoardId
         }
         const addUserStory = new userStoryBoardModel(Payload);

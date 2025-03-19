@@ -20,14 +20,13 @@ export const getEmployee = async (req, res) => {
         const employees = await userModel.find({ company:companyId })
 
         const findStoryBoardForEmployees = await Promise.all(employees.map(async (employee) => {
-            const userStoryBoards = await userStoryBoardModel.find({ employeeId: employee._id })
+            const userStoryBoards = await userStoryBoardModel.find({ userId: employee._id })
             const storyBoardIds = userStoryBoards.map(story => story.storyBoardId)
-            const storyBoards = await storyBoardModel.find({ _id: { $in: storyBoardIds } }).select("storyBoardName");
+            const storyBoards = await storyBoardModel.find({ _id: { $in: storyBoardIds } })
             return {
                 ...employee._doc,
                 storyBoards: storyBoards.map(sb => ({
-                    id: sb._id,
-                    name: sb.storyBoardName
+                    ...sb._doc
                 }))
             };
         }))
