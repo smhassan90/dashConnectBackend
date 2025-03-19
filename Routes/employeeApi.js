@@ -12,7 +12,7 @@ employeeRouter.post('/addEmployee',topLevelAuth,addEmployee)
 employeeRouter.delete('/deleteEmployee/:employeeId',topLevelAuth,deleteEmployee)
 employeeRouter.put('/updateEmployeeQuota/:employeeId',topLevelAuth,updateEmployeeQuota)
 employeeRouter.put('/updateEmployee/:employeeId',auth,updateEmployee)
-employeeRouter.get('/getEmployee',auth,getEmployee)
+employeeRouter.get('/getEmployee',topLevelAuth,getEmployee)
 employeeRouter.get('/getEmployee/:employeeId',auth,getSingleEmployee)
 
 export default employeeRouter;

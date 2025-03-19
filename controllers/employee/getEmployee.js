@@ -17,7 +17,7 @@ export const getEmployee = async (req, res) => {
             });
         }
         const companyId = user.company
-        const employees = await employeeModel.find({ companyId })
+        const employees = await userModel.find({ company:companyId })
 
         const findStoryBoardForEmployees = await Promise.all(employees.map(async (employee) => {
             const userStoryBoards = await userStoryBoardModel.find({ employeeId: employee._id })
