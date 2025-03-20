@@ -5,6 +5,7 @@ import storyBoardModel from "../../models/storyBoard.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import userModel from "../../models/User.js";
 import companyModal from "../../models/Company.js";
+import userStoryBoardModel from "../../models/userStoryBoard.js";
 
 export const addLevelStoryBoard = async (req, res) => {
     try {
@@ -53,6 +54,16 @@ export const addLevelStoryBoard = async (req, res) => {
 
         const newLevelStoryBoard = new levelStoryBoardModel({ levelId, storyBoardId });
         const savedLevelStoryBoard = await newLevelStoryBoard.save();
+
+        const employees = await userModel.find({ company: companyId, level: levelExists.levelNumber }).select("_id");
+
+        if (employees.length > 0) {
+            const userStoryBoardEntries = employees.map(emp => ({
+                userId: emp._id,
+                storyBoardId
+            }));
+            await userStoryBoardModel.insertMany(userStoryBoardEntries);
+        }
 
         return res.status(OK).send({
             success: true,

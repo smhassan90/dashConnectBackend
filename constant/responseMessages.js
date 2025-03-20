@@ -43,7 +43,7 @@ export const responseMessages = {
     EMPLOYEE_DELETED:"Employee Delete Successfully",
     UNAUTHORIZED:"You are Not Authorized",
     EMPLOYEE_UPDATED:"Employee Updated Successfully",
-    STORY_BOARD_SAVED:"New Story Baords Created",
+    STORY_BOARD_SAVED:"New Story Board Created",
     GET_STORY_BOARDS:"Get Story Board Successfully",
     STORY_NOT_FOUND:"Story Board Not Found",
     ADD_STORYBORD_USER:"Add StoryBoard for User",
@@ -59,5 +59,6 @@ export const responseMessages = {
     GET_LEVEL_SUCCESS:"Get Level Successfully",
     LEVEL_STORY_BOARD_EXISTS:"Level Story Board Already Exist",
     LEVEL_STORY_BOARD_SAVED:"Level Story Board Saved",
-    DELETE_STORY_LEVEL:"Delete Story Level"
+    DELETE_STORY_LEVEL:"Delete Story Level",
+    STORY_UPDATED:"Story Board Updated"
 }
