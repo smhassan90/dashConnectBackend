@@ -51,5 +51,6 @@ export const responseMessages = {
     DELETE_STORY_BOARD:"Delete Story Board",
     NOT_AUTHORIZED:"You're Not Authorized Person",
     EMAIL_FOUND:"Email Already Exist",
-    PLEASE_CHOOSE_OTHER:"Please Choose Other"
+    PLEASE_CHOOSE_OTHER:"Please Choose Other",
+    STORY_LIMIT_FULL:"Story Board Limit Full"
 }
