@@ -37,7 +37,7 @@ export const saveStory = async (req, res) => {
         }
         const findStoryBoard = await storyBoardModel.findById(storyBoardId)
         const checkGraphsLimit = await storyModel.countDocuments({ storyBoardId })
-        if (checkGraphsLimit < findStoryBoard.graphLimit) {
+        if (checkGraphsLimit > findStoryBoard.graphLimit) {
             return res.status(NOTALLOWED).send({
                 success: false,
                 error: false,
@@ -54,7 +54,7 @@ export const saveStory = async (req, res) => {
         });
 
         await newStory.save();
-
+        await storyBoardModel.findByIdAndUpdate(storyBoardId, { $inc: { graphAvail: 1 } })
         return res.status(OK).send({
             success: true,
             error: false,

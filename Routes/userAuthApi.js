@@ -2,7 +2,7 @@ import {Router} from 'express'
 import { signUp } from "../controllers/auth/signup.js";
 import { login } from '../controllers/auth/login.js';
 import { uploadImage } from '../controllers/user/uploadImage.js';
-import { auth } from '../config/tokenVerification.js';
+import { auth, ownerAuth } from '../config/tokenVerification.js';
 import upload from '../middleware/multer.js';
 import { changePassword } from '../controllers/auth/changePassword.js';
 import { forgotPassword } from '../controllers/auth/forgotPassword.js';
@@ -43,11 +43,11 @@ authRouter.put("/resetPassword", resetPassword);
 
 // Delete Users
 // route (/api/user/v1/deleteUsers)
-authRouter.put("/deleteUsers",auth, deleteUsers);
+authRouter.put("/deleteUsers",ownerAuth, deleteUsers);
 
 // Delete Companies
 // route (/api/user/v1/deleteCompanies)
-authRouter.put("/deleteCompanies",auth, deleteCompanies);
+authRouter.put("/deleteCompanies",ownerAuth, deleteCompanies);
 
 // CSV file Upload
 // route (/api/user/v1/createSchema)

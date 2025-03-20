@@ -52,5 +52,12 @@ export const responseMessages = {
     NOT_AUTHORIZED:"You're Not Authorized Person",
     EMAIL_FOUND:"Email Already Exist",
     PLEASE_CHOOSE_OTHER:"Please Choose Other",
-    STORY_LIMIT_FULL:"Story Board Limit Full"
+    STORY_LIMIT_FULL:"Story Board Limit Full",
+    STORY_BOARD_NOT_FOUND:"Story Board Not Found",
+    LEVEL_ALREADY_EXISTS:"Level Already Exist",
+    LEVEL_NOT_FOUND:"Level Not Found",
+    GET_LEVEL_SUCCESS:"Get Level Successfully",
+    LEVEL_STORY_BOARD_EXISTS:"Level Story Board Already Exist",
+    LEVEL_STORY_BOARD_SAVED:"Level Story Board Saved",
+    DELETE_STORY_LEVEL:"Delete Story Level"
 }

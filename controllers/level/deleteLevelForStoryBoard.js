@@ -1,14 +1,12 @@
 import { FORBIDDEN, INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatus.js";
-import employeeModel from "../../models/Employee.js";
 import { responseMessages } from "../../constant/responseMessages.js";
-import storyBoardModel from "../../models/storyBoard.js";
 import companyModal from "../../models/Company.js";
 import userModel from "../../models/User.js";
-import userStoryBoardModel from "../../models/userStoryBoard.js";
+import levelStoryBoardModel from "../../models/levelStoryBoard.js";
 
-export const deleteStoryForEmployee = async (req, res) => {
+export const deleteLevelForStory = async (req, res) => {
     try {
-        const { storyBoardId, userId } = req.query
+        const { storyBoardId, levelId } = req.query
         const userIdd = req.userId;
         const user = await userModel.findById(userIdd).select("company");
         if (!user) {
@@ -27,12 +25,12 @@ export const deleteStoryForEmployee = async (req, res) => {
                 message: responseMessages.COMPANY_NOT_FOUND,
             });
         }
-        const deleteStory = await userStoryBoardModel.findOneAndDelete({storyBoardId,userId})
+        const deleteStory = await levelStoryBoardModel.findOneAndDelete({ storyBoardId, levelId })
 
         return res.status(OK).send({
             success: true,
             error: false,
-            message: responseMessages.DELETE_STORY_BOARD,
+            message: responseMessages.DELETE_STORY_LEVEL,
             data: "",
         });
     } catch (error) {

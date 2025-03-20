@@ -5,16 +5,11 @@ const storyBoardSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    level: {
-        type: Number,
-        enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        default: 1
-    },
-    graphLimit:{
+    graphLimit: {
         type: Number,
         default: 10
     },
-    graphAvail:{
+    graphAvail: {
         type: Number,
         default: 0
     },
