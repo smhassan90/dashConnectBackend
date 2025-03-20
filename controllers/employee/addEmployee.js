@@ -3,6 +3,7 @@ import employeeModel from "../../models/Employee.js";
 import companyModal from "../../models/Company.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import userModel from "../../models/User.js";
+import levelModel from "../../models/level.js";
 import bcrypt from "bcrypt";
 
 export const addEmployee = async (req, res) => {
@@ -42,6 +43,14 @@ export const addEmployee = async (req, res) => {
                 message: responseMessages.PLEASE_CHOOSE_OTHER,
             });
         }
+        const existingLevel = await levelModel.findOne({ companyId, levelNumber:level });
+        if (!existingLevel) {
+            return res.status(BADREQUEST).send({
+                success: false,
+                error: true,
+                message: responseMessages.LEVEL_NOT_FOUND,
+            });
+        }
         const findEmail = await userModel.findOne({ email })
         if (findEmail) {
             return res.status(ALREADYEXISTS).send({
@@ -58,7 +67,7 @@ export const addEmployee = async (req, res) => {
             lastName,
             email,
             password: hashpassword,
-            level,
+            level:existingLevel._id,
             quota,
             company: companyId
         };
