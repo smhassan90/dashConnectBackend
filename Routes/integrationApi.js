@@ -10,6 +10,7 @@ import { genrateGraphQuery } from "../controllers/integration/generateGraphQuery
 import { saveStory } from "../controllers/integration/saveStory.js";
 import { getAllStories } from "../controllers/integration/getAllStories.js";
 import { reRunGraphQuery } from "../controllers/integration/reRunQuery.js";
+import { refreshQuery } from "../controllers/integration/refreshQuery.js";
 dotenv.config();
 
 const integrationRouter = express.Router();
@@ -27,6 +28,7 @@ integrationRouter.post('/genrateGraphQuery',auth,genrateGraphQuery)
 integrationRouter.post('/saveStory/:storyBoardId',auth,saveStory)
 integrationRouter.get('/getAllStories/:storyBoardId',auth,getAllStories)
 integrationRouter.post('/reRunQuery',auth,reRunGraphQuery)
+integrationRouter.post('/refreshQuery',auth,refreshQuery)
 
 
 export default integrationRouter;

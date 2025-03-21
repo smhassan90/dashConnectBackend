@@ -33,6 +33,7 @@ export const responseMessages = {
     INTEGRATION_DATA_NOT_FOUND:"Meta Integration data not found.",
     SUGGEST_QUESTION_SUCCESS:"Suggest Question Success",
     QUERY_DATA:"Query Data Successfully",
+    REFRESH_DATA:"Data Refresh Successfully",
     ALL_INTEGRATIONS_PROCESSED:"All Meta Integration Saved",
     STORY_SAVED_SUCCESS:"Story Save Successfully",
     GET_ALL_STORY:"Get All Stories Successfully",
