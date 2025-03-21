@@ -11,6 +11,12 @@ const userStoryBoardSchema = new mongoose.Schema({
         ref: "StoryBoard",
         required: true,
     },
+    priority:{
+        type:Number,
+        required:true,
+        enum:[1,2],
+        default:1
+    }
 },
     {
         timestamps: true,

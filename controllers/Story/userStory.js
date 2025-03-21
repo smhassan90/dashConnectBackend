@@ -33,9 +33,11 @@ export const addStoryForEmployee = async (req, res) => {
                 message: responseMessages.STORY_NOT_FOUND,
             });
         }
+        const findUserStoryBoard = await userStoryBoardModel.find({userId})
         const Payload = {
             userId,
-            storyBoardId
+            storyBoardId,
+            priority:findUserStoryBoard > 0 ? 2 : 1
         }
         const addUserStory = new userStoryBoardModel(Payload);
         const savedUserStory = await addUserStory.save();
