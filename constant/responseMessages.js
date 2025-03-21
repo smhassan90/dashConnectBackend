@@ -60,5 +60,6 @@ export const responseMessages = {
     LEVEL_STORY_BOARD_EXISTS:"Level Story Board Already Exist",
     LEVEL_STORY_BOARD_SAVED:"Level Story Board Saved",
     DELETE_STORY_LEVEL:"Delete Story Level",
-    STORY_UPDATED:"Story Board Updated"
+    STORY_UPDATED:"Story Board Updated",
+    PRIORITY_CHANGE:"Priority Change Succesfully"
 }

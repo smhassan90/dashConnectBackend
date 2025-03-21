@@ -23,11 +23,17 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // level: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Level",
+    //   required: true,
+    //   default:1
+    // },
     level: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Level",
+      type: Number,
+      enum: [1, 2, 3, 4, 5],
+      default: 1,
       required: true,
-      default:1
     },
     quota: {
       type: Number,

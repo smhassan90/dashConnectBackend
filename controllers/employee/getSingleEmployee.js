@@ -1,4 +1,4 @@
-import { INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatus.js";
+import { INTERNALERROR, NOTALLOWED, NOTFOUND, OK } from "../../constant/httpStatus.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import employeeModel from "../../models/Employee.js";
 import storyBoardModel from "../../models/storyBoard.js";
@@ -21,7 +21,11 @@ export const getSingleEmployee = async (req, res) => {
         const employee = await userModel.findById(employeeId)
 
         const userStoryBoards = await userStoryBoardModel.find({ userId: employee._id })
-        const storyBoardIds = userStoryBoards.map(story => story.storyBoardId)
+        const priorityMap = {};
+        const storyBoardIds = userStoryBoards.map(story => {
+            priorityMap[story.storyBoardId] = story.priority;
+            return story.storyBoardId;
+        });
         const storyBoards = await storyBoardModel.find({ _id: { $in: storyBoardIds } });
         return res.status(OK).send({
             success: true,
@@ -30,7 +34,8 @@ export const getSingleEmployee = async (req, res) => {
             data: {
                 ...employee._doc,
                 storyBoards: storyBoards.map(sb => ({
-                    ...sb._doc
+                    ...sb._doc,
+                    priority:priorityMap[sb._id]
                 }))
             }
         });
