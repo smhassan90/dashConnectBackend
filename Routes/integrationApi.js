@@ -11,6 +11,8 @@ import { saveStory } from "../controllers/integration/saveStory.js";
 import { getAllStories } from "../controllers/integration/getAllStories.js";
 import { reRunGraphQuery } from "../controllers/integration/reRunQuery.js";
 import { refreshQuery } from "../controllers/integration/refreshQuery.js";
+import { filterFetchTables } from "../controllers/integration/filterFetchTables.js";
+import { updateMetaIntegrationDetails } from "../controllers/integration/updateMetaIntegration.js";
 dotenv.config();
 
 const integrationRouter = express.Router();
@@ -22,7 +24,9 @@ const openai = new OpenAI({
 
 integrationRouter.post('/testConnectionIntegration',auth,testConnection)
 integrationRouter.post('/fetchTables',auth,FetchTables)
+integrationRouter.post('/filterFetchTables/:integrationId',auth,filterFetchTables)
 integrationRouter.post('/metaIntegrationDetails',auth,MetaIntegrationDetails)
+integrationRouter.post('/updateMetaIntegrationDetails/:integrationId',auth,updateMetaIntegrationDetails)
 integrationRouter.post('/sugestionQuestion',auth,suggestQuestion)
 integrationRouter.post('/genrateGraphQuery',auth,genrateGraphQuery)
 integrationRouter.post('/saveStory/:storyBoardId',auth,saveStory)
