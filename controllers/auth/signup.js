@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import userModel from "../../models/User.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import companyModal from "../../models/Company.js";
-
+import levelModel from "../../models/level.js"
 export const signUp = async (req, res) => {
   try {
     const {
@@ -46,26 +46,32 @@ export const signUp = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashpassword = await bcrypt.hash(password, salt);
 
-    const findCompany = await companyModal.findOne({ company });
+    const findCompany = await companyModal.findOne({ companyName:company });
     if (findCompany) {
       return res.status(FORBIDDEN).send({
         success: false,
         error: true,
-        message: responseMessages.ALREADY_EXIST,
+        message: responseMessages.COMPANY_EXIST,
       });
     }
-
     const companyPayload = {
       companyName: company,
     };
-
     const newCompany = new companyModal(companyPayload);
     const saveCompany = await newCompany.save();
+    const levelPayload = {
+      displayName: "Owner",
+      levelNumber:1,
+      companyId:newCompany._id
+    };
+    const newLevel = new levelModel(levelPayload);
+    const saveLevel = await newLevel.save();
     const userPayload = {
       firstName,
       lastName,
       email,
       password: hashpassword,
+      level:newLevel._id,
       company:newCompany._id,
     };
 

@@ -1,6 +1,11 @@
-import { FORBIDDEN, INTERNALERROR, UNAUTHORIZED } from "../constant/httpStatus.js";
+import {
+  FORBIDDEN,
+  INTERNALERROR,
+  UNAUTHORIZED,
+} from "../constant/httpStatus.js";
 import jwt from "jsonwebtoken";
 import { responseMessages } from "../constant/responseMessages.js";
+import levelModel from "../models/level.js";
 export const auth = async (req, res, next) => {
   try {
     const token = req?.headers?.authorization?.split(" ")[1];
@@ -20,7 +25,7 @@ export const auth = async (req, res, next) => {
       });
     }
     req.userId = decode.id;
-    req.level = decode.role
+    req.level = decode.role;
     next();
   } catch (error) {
     return res.status(INTERNALERROR).json({
@@ -30,7 +35,6 @@ export const auth = async (req, res, next) => {
     });
   }
 };
-
 
 export const topLevelAuth = async (req, res, next) => {
   try {
@@ -50,9 +54,10 @@ export const topLevelAuth = async (req, res, next) => {
         success: false,
       });
     }
-    req.level = decode.role
-    req.userId = decode.id
-    if (req.level <= 3) {
+    const findLevel = await levelModel.findById(decode.role);
+    req.level = findLevel;
+    req.userId = decode.id;
+    if (req.level.levelNumber <= 3) {
       next();
     } else {
       return res.status(UNAUTHORIZED).json({
@@ -61,7 +66,6 @@ export const topLevelAuth = async (req, res, next) => {
         success: false,
       });
     }
-
   } catch (error) {
     return res.status(INTERNALERROR).json({
       message: error.message || error,
@@ -89,9 +93,10 @@ export const ownerAuth = async (req, res, next) => {
         success: false,
       });
     }
-    req.level = decode.role
-    req.userId = decode.id
-    if (req.level == 1) {
+    const findLevel = await levelModel.findById(decode.role);
+    req.level = findLevel;
+    req.userId = decode.id;
+    if (req.level.levelNumber == 1) {
       next();
     } else {
       return res.status(UNAUTHORIZED).json({
@@ -100,7 +105,6 @@ export const ownerAuth = async (req, res, next) => {
         success: false,
       });
     }
-
   } catch (error) {
     return res.status(INTERNALERROR).json({
       message: error.message || error,

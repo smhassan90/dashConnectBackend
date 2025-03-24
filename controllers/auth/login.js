@@ -7,7 +7,10 @@ import { generateToken } from "../../utils/generateToken.js";
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email }).populate({
+      path: "level",
+      select: "displayName levelNumber companyId"
+    });
     if (!user) {
       return res.status(NOTFOUND).send({
         success: false,
@@ -36,6 +39,8 @@ export const login = async (req, res) => {
       message: responseMessages.LOGIN_SUCEESS,
       data: {
         ...user._doc,
+        password:undefined,
+        level:user.level,
         token,
       },
     });
