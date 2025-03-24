@@ -8,16 +8,16 @@ import metaIntegrationModel from "../../models/MetaIntegrationDetails.js";
 export const filterFetchTables = async (req, res) => {
     try {
         const { integrationId } = req.params
-        const { platformName, url, username, password } = req.body;
-        if (!platformName || !url || !username || !password) {
-            return res.status(FORBIDDEN).json({
-                message: responseMessages.INVALID_FIELD,
-                error: true,
+        const findIntegration = await integrationModel.findById(integrationId)
+        if (!findIntegration) {
+            return res.status(NOTFOUND).send({
                 success: false,
+                error: true,
+                message: responseMessages.INTEGRATION_NOT_FOUND,
             });
         }
         const urlRegex = /jdbc:mysql:\/\/(.*):(\d+)\/(.*)/
-        const match = url.match(urlRegex);
+        const match = findIntegration?.url.match(urlRegex);
 
         if (!match) {
             return res.status(FORBIDDEN).json({
@@ -27,19 +27,12 @@ export const filterFetchTables = async (req, res) => {
             });
         }
         const [, host, port, database] = match;
-
-        const existingCredential = await integrationModel.findOne({
-            url,
-            username,
-            password,
-        });
-
-        if (existingCredential) {
+        if (findIntegration) {
             const pool = mysql.createPool({
                 host,
                 port: parseInt(port),
-                user: username,
-                password,
+                user: findIntegration?.username,
+                password: findIntegration?.password,
                 database,
             });
 

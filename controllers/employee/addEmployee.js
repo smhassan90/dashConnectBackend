@@ -43,14 +43,14 @@ export const addEmployee = async (req, res) => {
                 message: responseMessages.PLEASE_CHOOSE_OTHER,
             });
         }
-        // const existingLevel = await levelModel.findOne({ companyId, levelNumber:level });
-        // if (!existingLevel) {
-        //     return res.status(BADREQUEST).send({
-        //         success: false,
-        //         error: true,
-        //         message: responseMessages.LEVEL_NOT_FOUND,
-        //     });
-        // }
+        const existingLevel = await levelModel.findOne({ companyId, levelNumber:level });
+        if (!existingLevel) {
+            return res.status(BADREQUEST).send({
+                success: false,
+                error: true,
+                message: responseMessages.LEVEL_NOT_FOUND,
+            });
+        }
         const findEmail = await userModel.findOne({ email })
         if (findEmail) {
             return res.status(ALREADYEXISTS).send({
@@ -67,8 +67,7 @@ export const addEmployee = async (req, res) => {
             lastName,
             email,
             password: hashpassword,
-            // level:existingLevel._id,
-            level,
+            level:existingLevel._id,
             quota,
             company: companyId
         };

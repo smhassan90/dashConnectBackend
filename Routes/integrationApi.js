@@ -1,5 +1,5 @@
 import express from "express";
-import {auth} from "../config/tokenVerification.js";
+import {auth, topLevelAuth} from "../config/tokenVerification.js";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 import { testConnection } from "../controllers/integration/testConnection.js";
@@ -13,6 +13,9 @@ import { reRunGraphQuery } from "../controllers/integration/reRunQuery.js";
 import { refreshQuery } from "../controllers/integration/refreshQuery.js";
 import { filterFetchTables } from "../controllers/integration/filterFetchTables.js";
 import { updateMetaIntegrationDetails } from "../controllers/integration/updateMetaIntegration.js";
+import { getIntegration } from "../controllers/integration/getIntegrations.js";
+import { getMetaIntegration } from "../controllers/integration/getMetaIntegration.js";
+import { deleteMetaIntegration } from "../controllers/integration/deleteMetaIntegration.js";
 dotenv.config();
 
 const integrationRouter = express.Router();
@@ -24,15 +27,18 @@ const openai = new OpenAI({
 
 integrationRouter.post('/testConnectionIntegration',auth,testConnection)
 integrationRouter.post('/fetchTables',auth,FetchTables)
-integrationRouter.post('/filterFetchTables/:integrationId',auth,filterFetchTables)
+integrationRouter.get('/filterFetchTables/:integrationId',auth,filterFetchTables)
 integrationRouter.post('/metaIntegrationDetails',auth,MetaIntegrationDetails)
 integrationRouter.post('/updateMetaIntegrationDetails/:integrationId',auth,updateMetaIntegrationDetails)
+integrationRouter.get('/getMetaIntegration/:integrationId',auth,getMetaIntegration)
+integrationRouter.delete('/deleteMetaIntegration/:metaIntegrationId',auth,deleteMetaIntegration)
 integrationRouter.post('/sugestionQuestion',auth,suggestQuestion)
 integrationRouter.post('/genrateGraphQuery',auth,genrateGraphQuery)
 integrationRouter.post('/saveStory/:storyBoardId',auth,saveStory)
 integrationRouter.get('/getAllStories/:storyBoardId',auth,getAllStories)
 integrationRouter.post('/reRunQuery',auth,reRunGraphQuery)
 integrationRouter.post('/refreshQuery',auth,refreshQuery)
+integrationRouter.get('/getIntegration',topLevelAuth,getIntegration)
 
 
 export default integrationRouter;

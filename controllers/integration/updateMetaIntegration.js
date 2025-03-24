@@ -22,7 +22,7 @@ const pool = mysql.createPool({
 export const updateMetaIntegrationDetails = async (req, res) => {
     try {
         const { integrationId } = req.params
-        const { tables } = req.body;
+        const { tableName, description } = req.body;
         const userId = req.userId;
 
         // Fetch the user data using userId
@@ -44,88 +44,42 @@ export const updateMetaIntegrationDetails = async (req, res) => {
                 message: responseMessages.INTEGRATION_NOT_FOUND,
             });
         }
-        if (!tables || !Array.isArray(tables)) {
-            return res.status(FORBIDDEN).send({
-                success: false,
-                error: true,
-                message: responseMessages.PROVIDE_TABLES,
-            });
-        }
         const findTables = await metaIntegrationModel.find({ integrationId })
-        const checkTableExist = tables.find((table) =>
-            findTables.some((tab) => tab.tableName === table.tableName)
-        );
+        const checkTableExist = findTables.some((tab) => tab.tableName === tableName)
         if (checkTableExist) {
             return res.status(FORBIDDEN).send({
                 success: false,
                 error: true,
-                message: `Table ${checkTableExist.tableName} is Already Exist`,
+                message: `Table ${tableName} is Already Exist`,
             });
         }
-        let responseData = [];
-        let errors = [];
-        for (const table of tables) {
-            try {
-                const { tableName, description } = table;
-                if (!tableName || !description) {
-                    errors.push({
-                        tableName: tableName || "Unknown",
-                        success: false,
-                        error: true,
-                        message: responseMessages.PROVIDE_NAME_DESC,
-                    });
-                    continue;
-                }
-
-                const [tableExists] = await pool.query("SHOW TABLES LIKE ?", [tableName]);
-                if (tableExists.length === 0) {
-                    errors.push({
-                        tableName,
-                        success: false,
-                        error: true,
-                        message: `${tableName} ${responseMessages.TABLE_NOT_FOUND}`,
-                    });
-                    continue;
-                }
-                const [columns] = await pool.query("DESCRIBE ??", [tableName]);
-                const columnDetails = {};
-                columns.forEach((col) => {
-                    columnDetails[col.Field] = col.Type;
-                });
-
-                // Save metadata
-                const metaDetails = new metaIntegrationModel({
-                    integrationId,
-                    tableName,
-                    columns: columnDetails,
-                    description,
-                });
-
-                await metaDetails.save();
-                responseData.push({
-                    tableName,
-                    success: true,
-                    error: false,
-                    message: `Metadata for ${tableName} saved successfully`,
-                });
-
-            } catch (error) {
-                errors.push({
-                    tableName: table.tableName || "Unknown",
-                    success: false,
-                    error: true,
-                    message: responseMessages.FAILED_SAVED_META_INTEGRATION,
-                });
-            }
+        const [tableExists] = await pool.query("SHOW TABLES LIKE ?", [tableName]);
+        if (tableExists.length === 0) {
+            return res.status(NOTFOUND).send({
+                success: false,
+                error: true,
+                message: `Table ${tableName} Not Found`,
+            });
         }
-        res.status(OK).json({
-            message: responseMessages.ALL_INTEGRATIONS_PROCESSED,
+        const [columns] = await pool.query("DESCRIBE ??", [tableName]);
+        const columnDetails = {};
+        columns.forEach((col) => {
+            columnDetails[col.Field] = col.Type;
+        });
+
+        // Save metadata
+        const metaDetails = new metaIntegrationModel({
+            integrationId,
+            tableName,
+            columns: columnDetails,
+            description,
+        });
+
+        await metaDetails.save();
+        return res.status(OK).send({
             success: true,
             error: false,
-            data: {
-                responseData,
-                errors
-            },
+            message: responseMessages.TABLE_ADD,
         });
     } catch (error) {
         return res.status(INTERNALERROR).json({

@@ -13,6 +13,7 @@ export const responseMessages = {
     OTP_SUCCESSFULLY:"OTP Verified Successfully",
     COMPANY_NOT_FOUND:"Company Not Found",
     INTEGRATION_NOT_FOUND:"Integration Not Found",
+    GET_INTEGRATION:"Get Integration Successfully",
     MYSQL_CONNECTION_SUCCESS:"Mysql Connection Success",
     MYSQL_CONNECTION_FAILED:"Mysql Connection Failed",
     ACUITY_CONNECTION_SUCCESS:"Acuity Connection Success",
@@ -64,5 +65,9 @@ export const responseMessages = {
     LEVEL_STORY_BOARD_SAVED:"Level Story Board Saved",
     DELETE_STORY_LEVEL:"Delete Story Level",
     STORY_UPDATED:"Story Board Updated",
-    PRIORITY_CHANGE:"Priority Change Succesfully"
+    PRIORITY_CHANGE:"Priority Change Succesfully",
+    TABLE_ADD:"Add Table Successfully",
+    META_INTEGRATION_NOT_FOUND:"Integration Tables Not Found",
+    META_INTEGRATION_FOUND:"Get Meta Integration Successfully",
+    DELETE_INTEGRATION_FOUND:"Delete Meta Integration Successfully"
 }
