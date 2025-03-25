@@ -55,7 +55,7 @@ export const addLevelStoryBoard = async (req, res) => {
         const newLevelStoryBoard = new levelStoryBoardModel({ levelId, storyBoardId });
         const savedLevelStoryBoard = await newLevelStoryBoard.save();
 
-        const employees = await userModel.find({ company: companyId, level: levelExists.levelNumber }).select("_id");
+        const employees = await userModel.find({ company: companyId, level: levelExists._id }).select("_id");
 
         if (employees.length > 0) {
             const userStoryBoardEntries = employees.map(emp => ({

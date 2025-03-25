@@ -7,7 +7,7 @@ import { deleteLevelForStory } from "../controllers/level/deleteLevelForStoryBoa
 const levelRouter = express.Router();
 
 levelRouter.post('/addLevel',ownerAuth,addLevel)
-levelRouter.get('/getLevel',ownerAuth,getLevel)
+levelRouter.get('/getLevel',topLevelAuth,getLevel)
 levelRouter.post('/addStoryBoardLevel',topLevelAuth,addLevelStoryBoard)
 levelRouter.delete('/deleteLevelForStory',topLevelAuth,deleteLevelForStory)
 
