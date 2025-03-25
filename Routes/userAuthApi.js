@@ -11,6 +11,7 @@ import { forgotPasswordTokenVerify } from '../controllers/auth/forgotPasswordTok
 import { deleteUsers } from '../controllers/user/deleteUsers.js';
 import { deleteCompanies } from '../controllers/company/deleteCompanies.js';
 import { createSchema } from '../controllers/table/createSchema.js';
+import { updateUser } from '../controllers/auth/updateUser.js';
 
 const authRouter = Router()
 // Create User 
@@ -44,6 +45,10 @@ authRouter.put("/resetPassword", resetPassword);
 // Delete Users
 // route (/api/user/v1/deleteUsers)
 authRouter.put("/deleteUsers",ownerAuth, deleteUsers);
+
+// Update User Information
+// route (/api/user/v1/updateUser)
+authRouter.put("/updateUser/:id",auth, updateUser);
 
 // Delete Companies
 // route (/api/user/v1/deleteCompanies)
