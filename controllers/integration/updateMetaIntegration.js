@@ -80,6 +80,7 @@ export const updateMetaIntegrationDetails = async (req, res) => {
             success: true,
             error: false,
             message: responseMessages.TABLE_ADD,
+            data:metaDetails
         });
     } catch (error) {
         return res.status(INTERNALERROR).json({

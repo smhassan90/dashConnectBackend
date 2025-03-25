@@ -3,6 +3,8 @@ import userModel from "../../models/User.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import storyModel from "../../models/Story.js";
 import storyBoardModel from "../../models/storyBoard.js";
+import mysql from "mysql2";
+import dotenv from "dotenv";
 
 export const saveStory = async (req, res) => {
     try {
@@ -18,7 +20,17 @@ export const saveStory = async (req, res) => {
                 message: responseMessages.USER_NOT_FOUND,
             });
         }
-
+        const pool = mysql.createPool({
+            host: process.env.DB_HOST,
+            port: process.env.DB_PORT,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+            waitForConnections: true,
+            connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT),
+            queueLimit: 0,
+            connectTimeout: parseInt(process.env.DB_TIMEOUT),
+        });
         const companyId = user.company;
         if (!companyId) {
             return res.status(NOTFOUND).send({
@@ -54,12 +66,25 @@ export const saveStory = async (req, res) => {
         });
 
         await newStory.save();
+        const result = await new Promise((resolve, reject) => {
+            pool.query(query, (error, results) => {
+                if (error) {
+                    console.error("Database query error:", error);
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            });
+        });
         await storyBoardModel.findByIdAndUpdate(storyBoardId, { $inc: { graphAvail: 1 } })
         return res.status(OK).send({
             success: true,
             error: false,
             message: responseMessages.STORY_SAVED_SUCCESS,
-            data: newStory,
+            data: {
+                ...newStory._doc,
+                data:result
+            },
         });
     } catch (error) {
         return res.status(INTERNALERROR).json({

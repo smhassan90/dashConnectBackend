@@ -15,6 +15,10 @@ const storySchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    storyName: {
+        type: String,
+        required: true
+    },
     resultType: {
         type: String,
         enum: ["Line Chart", "Bar Chart", "Report"],
