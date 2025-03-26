@@ -32,7 +32,7 @@ export const updateUser = async (req, res) => {
             error: false,
             success: true,
             data: {
-                ...updateUser,
+                ...updateUser._doc,
                 level:undefined
             }
         })
