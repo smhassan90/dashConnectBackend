@@ -5,6 +5,7 @@ import metaIntegrationModel from "../../models/MetaIntegrationDetails.js";
 import OpenAI from "openai";
 import { SuggestQuestionData } from "../../data/suggestQuestionData.js";
 import { responseMessages } from "../../constant/responseMessages.js";
+import storyBoardModel from "../../models/storyBoard.js";
 
 const openai = new OpenAI({
     apiKey: process.env.GROQ_API_KEY,
@@ -13,7 +14,7 @@ const openai = new OpenAI({
 
 export const suggestQuestion = async (req, res) => {
     try {
-        const { requiredGraph } = req.body;
+        const { requiredGraph, storyBoardId } = req.body;
         const customText = `I have given you the structure format of my database. You need to identify the required graph and return and provide 3 Analytical Graph and its description only`;
 
         const userId = req.userId;
@@ -33,12 +34,16 @@ export const suggestQuestion = async (req, res) => {
                 message: responseMessages.COMPANY_NOT_FOUND,
             });
         }
-
+        const findStoryBoard = await storyBoardModel.findById(storyBoardId)
+        if (!findStoryBoard) {
+            return res.status(NOTFOUND).send({
+                success: false,
+                error: true,
+                message: responseMessages.STORY_BOARD_NOT_FOUND,
+            });
+        }
         // Step 2: Find the integration credentials using companyId
-        const findIntegration = await integrationModel.findOne({
-            companyId,
-        });
-
+        const findIntegration = await integrationModel.findById(findStoryBoard?.integrationId);
         if (!findIntegration) {
             return res.status(NOTFOUND).send({
                 success: false,

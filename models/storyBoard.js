@@ -5,6 +5,11 @@ const storyBoardSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    integrationId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Integration",
+        required: true,
+    },
     graphLimit: {
         type: Number,
         default: 10

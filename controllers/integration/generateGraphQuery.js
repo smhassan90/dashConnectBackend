@@ -6,6 +6,8 @@ import userModel from "../../models/User.js";
 import OpenAI from "openai";
 import mysql from "mysql2";
 import dotenv from "dotenv";
+import storyBoardModel from "../../models/storyBoard.js";
+import { checkIntegration } from "../../utils/checkInteration.js";
 dotenv.config();
 
 const openai = new OpenAI({
@@ -13,21 +15,9 @@ const openai = new OpenAI({
     baseURL: "https://api.groq.com/openai/v1",
 });
 
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT),
-    queueLimit: 0,
-    connectTimeout: parseInt(process.env.DB_TIMEOUT),
-});
-
 export const genrateGraphQuery = async (req, res) => {
     try {
-        const { customText, requiredGraph } = req.body;
+        const { customText, requiredGraph, storyBoardId } = req.body;
         const userId = req.userId;
         const user = await userModel.findById(userId).select("company");
         if (!user) {
@@ -45,9 +35,15 @@ export const genrateGraphQuery = async (req, res) => {
                 message: responseMessages.COMPANY_NOT_FOUND,
             });
         }
-        const findIntegration = await integrationModel.findOne({
-            companyId,
-        });
+        const findStoryBoard = await storyBoardModel.findById(storyBoardId)
+        if (!findStoryBoard) {
+            return res.status(NOTFOUND).send({
+                success: false,
+                error: true,
+                message: responseMessages.STORY_BOARD_NOT_FOUND,
+            });
+        }
+        const findIntegration = await integrationModel.findOne(findStoryBoard.integrationId);
         if (!findIntegration) {
             return res.status(NOTFOUND).send({
                 success: false,
@@ -55,7 +51,6 @@ export const genrateGraphQuery = async (req, res) => {
                 message: responseMessages.INTEGRATION_NOT_FOUND,
             });
         }
-
         const findMetaIntegration = await metaIntegrationModel.find({
             integrationId: findIntegration._id,
         });
@@ -85,29 +80,91 @@ export const genrateGraphQuery = async (req, res) => {
             return cleanedQuery;
         }
 
+
         // const aiResponse = await openai.chat.completions.create({
         //     model: "llama-3.3-70b-versatile",
         //     messages: [{ role: "user", content: resultMessage }],
         // });
         // const query = cleanSQLQuery(aiResponse.choices[0].message.content)
-        const query = "SELECT t_doctor.NAME, t_doctor.AGE, t_doctor.USERNAME, SUM(t_appointment.charges) AS total_income FROM t_doctor JOIN t_appointment ON t_doctor.ID = t_appointment.DOCTOR_ID GROUP BY t_doctor.ID, t_doctor.NAME";
-
-        pool.query(query, (error, results) => {
-            if (error) {
-                console.error("Database query error:", error);
-                return;
+        function modifyQueryForMySQL(query) {
+            return query
+                .replace(/\bIDENTITY\(1,1\)\b/gi, "AUTO_INCREMENT")
+                .replace(/\bNVARCHAR\((\d+)\)/gi, "VARCHAR($1)")
+        }
+        function modifyQueryForOracle(query) {
+            return query
+                .replace(/LIMIT \d+/i, "")
+                .replace(/AUTO_INCREMENT/i, "")
+        }
+        function modifyQueryForSQLServer(query) {
+            return query
+                .replace(/`/g, "")
+                .replace(/LIMIT \d+/i, "")
+                .replace(/UNSIGNED/i, "")
+        }
+        function modifyQueryForDatabase(query, databaseType) {
+            if (databaseType === "mysql") {
+                return modifyQueryForMySQL(query);
+            } else if (databaseType === "oracle") {
+                return modifyQueryForOracle(query);
+            } else if (databaseType === "sqlserver") {
+                return modifyQueryForSQLServer(query);
+            } else {
+                return query; // Default case (agar koi match na kare toh original query return kar do)
             }
+        }
+        // const aiGeneratedQuery = aiResponse.choices[0].message.content
+        // const finalQuery = modifyQueryForDatabase(aiGeneratedQuery, findIntegration.platformName);
+        const query = "SELECT t_doctor.NAME, t_doctor.AGE, t_doctor.USERNAME, SUM(t_appointment.charges) AS total_income FROM t_doctor JOIN t_appointment ON t_doctor.ID = t_appointment.DOCTOR_ID GROUP BY t_doctor.ID, t_doctor.NAME";
+        const { pool } = await checkIntegration(findIntegration);
+        if (findIntegration.platformName === "mysql") {
+            pool.query(query, (error, results) => {
+                if (error) {
+                    console.error("Database query error:", error);
+                    return res.status(INTERNALERROR).json({
+                        message: "Database query failed",
+                        error: true,
+                        success: false,
+                    });
+                }
+                return res.status(OK).json({
+                    error: false,
+                    success: true,
+                    message: responseMessages.QUERY_DATA,
+                    data: {
+                        query: query,
+                        resultType: requiredGraph,
+                        data: results
+                    }
+                });
+            });
+        } else if (findIntegration.platformName === "oracle") {
+            const connection = await pool.getConnection();
+            const result = await connection.execute(query);
+            connection.close();
             return res.status(OK).json({
                 error: false,
                 success: true,
                 message: responseMessages.QUERY_DATA,
                 data: {
                     query: query,
-                    resultType:requiredGraph,
-                    data: results
+                    resultType: requiredGraph,
+                    data: result.rows
                 }
             });
-        });
+        } else if (findIntegration.platformName === "sqlserver") {
+            const result = await pool.request().query(query);
+            return res.status(OK).json({
+                error: false,
+                success: true,
+                message: responseMessages.QUERY_DATA,
+                data: {
+                    query: query,
+                    resultType: requiredGraph,
+                    data: result.recordset
+                }
+            });
+        }
 
         // Execute the query
         // poolTwo.query(query, (error, results) => {
@@ -125,6 +182,7 @@ export const genrateGraphQuery = async (req, res) => {
         //     }
         // });
     } catch (error) {
+        console.log(error)
         return res.status(INTERNALERROR).json({
             message: error.message || error,
             error: true,

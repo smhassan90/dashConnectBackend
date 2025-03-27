@@ -4,10 +4,11 @@ import { responseMessages } from "../../constant/responseMessages.js";
 import storyBoardModel from "../../models/storyBoard.js";
 import companyModal from "../../models/Company.js";
 import userModel from "../../models/User.js";
+import integrationModel from "../../models/IntegrationCredentials.js";
 
 export const addStoryBoard = async (req, res) => {
     try {
-        const { storyBoardName } = req.body;
+        const { storyBoardName, integrationId } = req.body;
         const userId = req.userId;
         const user = await userModel.findById(userId).select("company");
         if (!user) {
@@ -26,8 +27,17 @@ export const addStoryBoard = async (req, res) => {
                 message: responseMessages.COMPANY_NOT_FOUND,
             });
         }
+        const integrationExists = await integrationModel.findById(integrationId);
+        if (!integrationExists) {
+            return res.status(FORBIDDEN).send({
+                success: false,
+                error: true,
+                message: responseMessages.INTEGRATION_NOT_FOUND,
+            });
+        }
         const storyPayload = {
             storyBoardName,
+            integrationId,
             companyId
         }
         const newStory = new storyBoardModel(storyPayload);
