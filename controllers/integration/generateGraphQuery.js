@@ -62,14 +62,20 @@ export const genrateGraphQuery = async (req, res) => {
                 message: responseMessages.INTEGRATION_DATA_NOT_FOUND,
             });
         }
-
-        // Create the message for Groq AI
-        let resultMessage = `I have given you the structure format of my database. You need to identify the required graph it may be asking for report and graph and return only the query in response based on the custom text. "Custom Text": ${customText}`;
-
+        let tableStructure = "";
         findMetaIntegration.forEach((table) => {
-            resultMessage += `| Table: ${table.tableName} | Columns: ${JSON.stringify(table.columns)} | Description: ${table.description}`;
+            tableStructure += `| Table: ${table.tableName} | Columns: ${JSON.stringify(table.columns)} | Description: ${table.description}`;
         });
 
+        // Create the message for Groq AI
+        let resultMessage = `My Database structure ${tableStructure} I have given you the structure format of my database. You need to identify the required graph it may be asking for report and graph and return only the query in response based on the following question: ${customText}`;
+        // const ifGraphisReport = (requiredGraph == "Line Chart" || requiredGraph == "Bar Chart") && `If it is a ${requiredGraph}, then provide two integer columns and one string column.`
+        // let resultMessage = `My Database structure ${tableStructure} I have given you the structure format of my database. You need to identify the required graph it may be asking for report and graph and return only the query in response based on the following question: ${customText} ${ifGraphisReport}.`;
+
+
+        // console.log(resultMessage)
+        // res.send(resultMessage)
+        // return 
         function cleanSQLQuery(inputString) {
             const cleanedQuery = inputString
                 .replace(/```sql\n?/i, '')
@@ -81,10 +87,10 @@ export const genrateGraphQuery = async (req, res) => {
         }
 
 
-        // const aiResponse = await openai.chat.completions.create({
-        //     model: "llama-3.3-70b-versatile",
-        //     messages: [{ role: "user", content: resultMessage }],
-        // });
+        const aiResponse = await openai.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: resultMessage }],
+        });
         // const query = cleanSQLQuery(aiResponse.choices[0].message.content)
         function modifyQueryForMySQL(query) {
             return query
@@ -113,14 +119,17 @@ export const genrateGraphQuery = async (req, res) => {
                 return query; // Default case (agar koi match na kare toh original query return kar do)
             }
         }
-        // const aiGeneratedQuery = aiResponse.choices[0].message.content
-        // const finalQuery = modifyQueryForDatabase(aiGeneratedQuery, findIntegration.platformName);
-        const query = "SELECT t_doctor.NAME, t_doctor.AGE, t_doctor.USERNAME, SUM(t_appointment.charges) AS total_income FROM t_doctor JOIN t_appointment ON t_doctor.ID = t_appointment.DOCTOR_ID GROUP BY t_doctor.ID, t_doctor.NAME";
+        const aiGeneratedQuery = aiResponse.choices[0].message.content
+        console.log(aiGeneratedQuery, "aiGeneratedQuery")
+        // const query = modifyQueryForDatabase(aiGeneratedQuery, findIntegration.platformName);
+        const query = cleanSQLQuery(aiGeneratedQuery);
+        console.log(query, "query")
+        // const query = "SELECT t_doctor.NAME, t_doctor.AGE, SUM(t_appointment.charges) AS total_income FROM t_doctor JOIN t_appointment ON t_doctor.ID = t_appointment.DOCTOR_ID GROUP BY t_doctor.ID, t_doctor.NAME";
         const { pool } = await checkIntegration(findIntegration);
         if (findIntegration.platformName === "mysql") {
             pool.query(query, (error, results) => {
                 if (error) {
-                    console.error("Database query error:", error);
+                    console.log("Database query error:", error);
                     return res.status(INTERNALERROR).json({
                         message: "Database query failed",
                         error: true,

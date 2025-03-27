@@ -36,7 +36,7 @@ integrationRouter.post('/sugestionQuestion',topLevelAuth,suggestQuestion)
 integrationRouter.post('/genrateGraphQuery',topLevelAuth,genrateGraphQuery)
 integrationRouter.post('/saveStory/:storyBoardId',topLevelAuth,saveStory)
 integrationRouter.get('/getAllStories/:storyBoardId',auth,getAllStories)
-integrationRouter.post('/reRunQuery',auth,reRunGraphQuery)
+integrationRouter.post('/reRunQuery',topLevelAuth,reRunGraphQuery)
 integrationRouter.post('/refreshQuery',auth,refreshQuery)
 integrationRouter.get('/getIntegration',topLevelAuth,getIntegration)
 

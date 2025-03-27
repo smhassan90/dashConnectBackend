@@ -7,8 +7,8 @@
 
 export const SuggestQuestionData = `Based on the provided database structure, I recommend the following three analytical graphs:
 
-1. **Doctor Specialization Distribution Bar Chart**: This graph will display the distribution of doctors across different specializations, with the x-axis representing the specialization IDs and the y-axis representing the count of doctors. This will help in understanding the concentration of doctors in specific specializations.
+**Doctor Specialization Distribution Bar Chart**: This graph will display the distribution of doctors across different specializations as specialization Name, with the x-axis representing the specialization IDs and the y-axis representing the count of doctors. This will help in understanding the concentration of doctors in specific specializations.
 
-2. **Clinic-Doctor Association Heatmap**: This graph will show the association between clinics and doctors, with clinics on one axis and doctors on the other. The heatmap will help identify which clinics have the most doctors associated with them and which doctors are associated with multiple clinics.
+**Clinic-Doctor Association Heatmap**: This graph will show the association between clinics and doctors, with clinics on one axis and doctors on the other. The heatmap will help identify which clinics have the most doctors associated with them and which doctors are associated with multiple clinics.
 
-3. **Doctor-Patient Interaction Network Graph**: This graph will illustrate the interactions between doctors and patients, with nodes representing doctors and patients, and edges representing the interactions between them This will help in understanding the complex relationships between doctors and patients, and identifying patterns or clusters of high interaction.`
+**Doctor-Patient Interaction Network Graph**: This graph will illustrate the interactions between doctors and patients, with nodes representing doctors and patients, and edges representing the interactions between them This will help in understanding the complex relationships between doctors and patients, and identifying patterns or clusters of high interaction.`

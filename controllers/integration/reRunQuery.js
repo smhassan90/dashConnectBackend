@@ -6,6 +6,8 @@ import userModel from "../../models/User.js";
 import OpenAI from "openai";
 import mysql from "mysql2";
 import dotenv from "dotenv";
+import { checkIntegration } from "../../utils/checkInteration.js";
+import storyBoardModel from "../../models/storyBoard.js";
 dotenv.config();
 
 const openai = new OpenAI({
@@ -13,21 +15,9 @@ const openai = new OpenAI({
     baseURL: "https://api.groq.com/openai/v1",
 });
 
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT),
-    queueLimit: 0,
-    connectTimeout: parseInt(process.env.DB_TIMEOUT),
-});
-
 export const reRunGraphQuery = async (req, res) => {
     try {
-        const { newQuery, requiredGraph } = req.body;
+        const { newQuery, requiredGraph, storyBoardId } = req.body;
         const userId = req.userId;
         const user = await userModel.findById(userId).select("company");
         if (!user) {
@@ -45,9 +35,15 @@ export const reRunGraphQuery = async (req, res) => {
                 message: responseMessages.COMPANY_NOT_FOUND,
             });
         }
-        const findIntegration = await integrationModel.findOne({
-            companyId,
-        });
+        const findStoryBoard = await storyBoardModel.findById(storyBoardId)
+        if (!findStoryBoard) {
+            return res.status(NOTFOUND).send({
+                success: false,
+                error: true,
+                message: responseMessages.STORY_BOARD_NOT_FOUND,
+            });
+        }
+        const findIntegration = await integrationModel.findOne(findStoryBoard.integrationId);
         if (!findIntegration) {
             return res.status(NOTFOUND).send({
                 success: false,
@@ -67,40 +63,89 @@ export const reRunGraphQuery = async (req, res) => {
                 message: responseMessages.INTEGRATION_DATA_NOT_FOUND,
             });
         }
-        pool.query(`EXPLAIN ${newQuery} LIMIT 0`, (error) => {
-            if (error) {
-                return res.status(BADREQUEST).json({
-                    success: false,
-                    error: true,
-                    message: "SQL Syntax Error: " + error.sqlMessage,
-                });
-            }
+        function cleanSQLQuery(inputString) {
+            const cleanedQuery = inputString
+                .replace(/```sql\n?/i, '')
+                .replace(/```$/, '')
+                .replace(/\n/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            return cleanedQuery;
+        }
+        let tableStructure = "";
+        findMetaIntegration.forEach((table) => {
+            tableStructure += `| Table: ${table.tableName} | Columns: ${JSON.stringify(table.columns)} | Description: ${table.description}`;
         });
-        pool.query(newQuery, (error, results, fields) => {
-            if (error) {
-                console.error("Database query error:", error);
-                return;
-            }
-            if (requiredGraph !== "Report") {
-                if (fields.length > 3) {
+        let resultMessage = `My Database structure ${tableStructure} I have given you the structure format of my database. I have given this query, ${newQuery} but it has a syntax error. please, rewrite this query correctly.`;
+        const aiResponse = await openai.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: resultMessage }],
+        });
+        const aiGeneratedQuery = aiResponse.choices[0].message.content
+        const query = cleanSQLQuery(aiGeneratedQuery);
+        const { pool } = await checkIntegration(findIntegration);
+        if (findIntegration.platformName === "mysql") {
+            pool.query(`EXPLAIN ${newQuery} LIMIT 0`, (error) => {
+                if (error) {
                     return res.status(BADREQUEST).json({
                         success: false,
                         error: true,
-                        message: responseMessages.ONLY_3_COLUMNS,
+                        message: "SQL Syntax Error: " + error.sqlMessage,
                     });
                 }
-            }
+                pool.query(newQuery, (error, results, fields) => {
+                    if (error) {
+                        console.error("Database query error:", error);
+                        return;
+                    }
+                    if (requiredGraph !== "Report") {
+                        if (fields.length > 3) {
+                            return res.status(BADREQUEST).json({
+                                success: false,
+                                error: true,
+                                message: responseMessages.ONLY_3_COLUMNS,
+                            });
+                        }
+                    }
+                    return res.status(OK).json({
+                        error: false,
+                        success: true,
+                        message: responseMessages.QUERY_DATA,
+                        data: {
+                            query: newQuery,
+                            resultType: requiredGraph,
+                            data: results
+                        }
+                    });
+                });
+            });
+        } else if (findIntegration.platformName === "oracle") {
+            const connection = await pool.getConnection();
+            const result = await connection.execute(query);
+            connection.close();
             return res.status(OK).json({
                 error: false,
                 success: true,
                 message: responseMessages.QUERY_DATA,
                 data: {
-                    query: newQuery,
+                    query: query,
                     resultType: requiredGraph,
-                    data: results
+                    data: result.rows
                 }
             });
-        });
+        } else if (findIntegration.platformName === "sqlserver") {
+            const result = await pool.request().query(query);
+            return res.status(OK).json({
+                error: false,
+                success: true,
+                message: responseMessages.QUERY_DATA,
+                data: {
+                    query: query,
+                    resultType: requiredGraph,
+                    data: result.recordset
+                }
+            });
+        }
     } catch (error) {
         return res.status(INTERNALERROR).json({
             message: error.message || error,

@@ -78,6 +78,7 @@ export const suggestQuestion = async (req, res) => {
         //     messages: [{ role: "user", content: resultMessage }],
         // });
         // const aiContent = aiResponse.choices[0].message.content;
+        console.log(resultMessage)
         const aiContent = SuggestQuestionData;
         const pointsArray = aiContent
             .split("\n")
