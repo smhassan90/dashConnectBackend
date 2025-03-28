@@ -18,8 +18,10 @@ export const getSingleEmployee = async (req, res) => {
             });
         }
         const companyId = user.company
-        const employee = await userModel.findById(employeeId)
-
+        const employee = await userModel.findById(employeeId).populate({
+            path: "level",
+            select: "displayName levelNumber companyId"
+          })
         const userStoryBoards = await userStoryBoardModel.find({ userId: employee._id })
         const priorityMap = {};
         const storyBoardIds = userStoryBoards.map(story => {
