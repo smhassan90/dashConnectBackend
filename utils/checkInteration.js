@@ -20,7 +20,7 @@ export const checkIntegration = async (findIntegration) => {
             connectionLimit: 10,
             queueLimit: 0,
             connectTimeout: 100000,
-        });
+        }).promise();
     } else if (findIntegration.platformName === "oracle") {
         pool = await oracledb.createPool({
             user: findIntegration.username,

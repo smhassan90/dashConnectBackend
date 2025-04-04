@@ -28,7 +28,7 @@ const openai = new OpenAI({
 integrationRouter.post('/testConnectionIntegration',auth,testConnection)
 integrationRouter.post('/fetchTables',auth,FetchTables)
 integrationRouter.get('/filterFetchTables/:integrationId',auth,filterFetchTables)
-integrationRouter.post('/metaIntegrationDetails',auth,MetaIntegrationDetails)
+integrationRouter.post('/metaIntegrationDetails/:integrationId',auth,MetaIntegrationDetails)
 integrationRouter.post('/updateMetaIntegrationDetails/:integrationId',auth,updateMetaIntegrationDetails)
 integrationRouter.get('/getMetaIntegration/:integrationId',auth,getMetaIntegration)
 integrationRouter.delete('/deleteMetaIntegration/:metaIntegrationId',auth,deleteMetaIntegration)

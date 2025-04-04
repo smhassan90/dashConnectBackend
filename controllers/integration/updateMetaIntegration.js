@@ -1,10 +1,11 @@
-import { FORBIDDEN, NOTALLOWED, NOTFOUND, OK } from "../../constant/httpStatus.js";
+import { FORBIDDEN, INTERNALERROR, NOTALLOWED, NOTFOUND, OK } from "../../constant/httpStatus.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import integrationModel from "../../models/IntegrationCredentials.js";
 import metaIntegrationModel from "../../models/MetaIntegrationDetails.js";
 import userModel from "../../models/User.js";
 import mysql from "mysql2";
 import dotenv from "dotenv";
+import { checkIntegration } from "../../utils/checkInteration.js";
 dotenv.config();
 
 const pool = mysql.createPool({
@@ -53,6 +54,7 @@ export const updateMetaIntegrationDetails = async (req, res) => {
                 message: `Table ${tableName} is Already Exist`,
             });
         }
+        const { pool } = await checkIntegration(findIntegration);
         const [tableExists] = await pool.query("SHOW TABLES LIKE ?", [tableName]);
         if (tableExists.length === 0) {
             return res.status(NOTFOUND).send({

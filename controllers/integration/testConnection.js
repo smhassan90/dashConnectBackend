@@ -2,44 +2,66 @@ import { FORBIDDEN, INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatu
 import { responseMessages } from "../../constant/responseMessages.js";
 import integrationModel from "../../models/IntegrationCredentials.js";
 import mysql from "mysql2";
+import oracledb from "oracledb";
 import userModel from "../../models/User.js";
 
-function testDbConnection(username, password, url) {
-    const match = url.match(/jdbc:mysql:\/\/(.*):(\d+)\/(.*)/);
-    if (!match) {
-        throw new Error("Invalid MySQL URL format");
+async function testDbConnection(username, password, url, platformName) {
+    if (platformName.toLowerCase() === "mysql") {
+        const match = url.match(/jdbc:mysql:\/\/(.*):(\d+)\/(.*)/);
+        if (!match) {
+            throw new Error("Invalid MySQL URL format");
+        }
+
+        const [_, host, port, dbname] = match;
+        return new Promise((resolve, reject) => {
+            const connection = mysql.createConnection({
+                host: host,
+                user: username,
+                password: password,
+                database: dbname,
+                port: parseInt(port, 10),
+                connectTimeout: 10000
+            });
+
+            connection.connect((err) => {
+                if (err) {
+                    console.error("Connection error:", err.message);
+                    resolve(false);
+                } else {
+                    console.log("MySQL connection successful");
+                    resolve(true);
+                }
+                connection.end();
+            });
+        });
+    } else if (platformName.toLowerCase() === "oracle") {
+        const match = url.match(/jdbc:oracle:thin:@(.*):(\d+)\/(.*)/);
+        if (!match) {
+            throw new Error("Invalid Oracle URL format");
+        }
+
+        const [_, host, port, dbname] = match;
+        console.log(`${host}:${port}/${dbname}`)
+        try {
+            const connection = await oracledb.getConnection({
+                user: username,
+                password: password,
+                // connectString: `${host}:${port}/${dbname}`,
+                connectString: `${host}:${port}/${dbname}`,
+            });
+
+            console.log("Oracle connection successful");
+            await connection.close();
+            return true;
+        } catch (err) {
+            console.error("Oracle Connection error:", err.message);
+            return false;
+        }
     }
-
-    const [_, host, port, dbname] = match;
-    return new Promise((resolve, reject) => {
-        // console.log("host", host);
-        // console.log("username", username);
-        // console.log("port", port);
-        // console.log("password", password);
-        // console.log("dbname", dbname);
-        const connection = mysql.createConnection({
-            host: host,
-            user: username,
-            password: password,
-            database: dbname,
-            port: parseInt(port, 10),
-            connectTimeout: 10000
-        });
-
-        connection.connect((err) => {
-            if (err) {
-                console.error("Connection error:", err.message);
-                resolve(false);
-            } else {
-                console.log("MySQL connection successful");
-                resolve(true);
-            }
-            connection.end();
-        });
-    });
 }
 export const testConnection = async (req, res) => {
     try {
+        // oracledb.initOracleClient({ libDir: "C:\Program Files (x86)\oracle\instantclient_23_7" });
         const { integrationName, platformName, username, password, url } = req.body;
         if (!platformName || !integrationName || !username || !password || !url) {
             return res.status(FORBIDDEN).json({
@@ -50,14 +72,14 @@ export const testConnection = async (req, res) => {
         }
 
         if (platformName.toLowerCase() === "mysql") {
-            const isConnected = await testDbConnection(username, password, url);
+            const isConnected = await testDbConnection(username, password, url, platformName);
             if (isConnected) {
                 const existingCredential = await integrationModel.findOne({
                     url,
                     username,
                     password,
                 });
-                if(existingCredential){
+                if (existingCredential) {
                     return res.status(FORBIDDEN).json({
                         message: responseMessages.CREDENTIAL_EXISTS,
                         error: true,
@@ -80,12 +102,48 @@ export const testConnection = async (req, res) => {
                     message: responseMessages.CREDENTIAL_SAVED,
                     error: false,
                     success: true,
+                    data:newIntegrationCredentials
                 });
-                // return res.status(OK).json({
-                //     message: responseMessages.MYSQL_CONNECTION_SUCCESS,
-                //     error: false,
-                //     success: true,
-                // });
+            } else {
+                return res.status(FORBIDDEN).json({
+                    message: responseMessages.MYSQL_CONNECTION_FAILED,
+                    error: true,
+                    success: false,
+                });
+            }
+        } else if (platformName.toLowerCase() === "oracle") {
+            const isConnected = await testDbConnection(username, password, url, platformName);
+            if (isConnected) {
+                const existingCredential = await integrationModel.findOne({
+                    url,
+                    username,
+                    password,
+                });
+                if (existingCredential) {
+                    return res.status(FORBIDDEN).json({
+                        message: responseMessages.CREDENTIAL_EXISTS,
+                        error: true,
+                        success: false,
+                    });
+                }
+                const userId = req.userId;
+                const user = await userModel.findById(userId);
+                const companyId = user.company;
+                const newIntegrationCredentials = new integrationModel({
+                    companyId,
+                    platformName,
+                    integrationName,
+                    url,
+                    username,
+                    password,
+                });
+                await newIntegrationCredentials.save();
+                return res.status(OK).json({
+                    message: responseMessages.CREDENTIAL_SAVED,
+                    error: false,
+                    success: true,
+                    data:newIntegrationCredentials
+                });
             } else {
                 return res.status(FORBIDDEN).json({
                     message: responseMessages.MYSQL_CONNECTION_FAILED,
