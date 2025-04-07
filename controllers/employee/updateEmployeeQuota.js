@@ -1,6 +1,7 @@
 import { INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatus.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import employeeModel from "../../models/Employee.js";
+import levelModel from "../../models/level.js";
 import userModel from "../../models/User.js";
 
 export const updateEmployeeQuota = async (req, res) => {
@@ -17,7 +18,7 @@ export const updateEmployeeQuota = async (req, res) => {
                 message: responseMessages.USER_NOT_FOUND,
             });
         }
-
+        const companyId = user.company;
         const employee = await userModel.findById(employeeId);
         if (!employee) {
             return res.status(NOTFOUND).send({
@@ -34,6 +35,8 @@ export const updateEmployeeQuota = async (req, res) => {
                 message: responseMessages.UNAUTHORIZED,
             });
         }
+
+        const existingLevel = await levelModel.findOne({ companyId, levelNumber:level });
         const payload = {
             level: level || employee.level,
             quota: quota || employee.quota
