@@ -77,12 +77,13 @@ export const suggestQuestion = async (req, res) => {
       }`;
     });
     const resultMessage = `My Database structure ${tableStructure} I have given you the structure format of my database. You need to identify the required graph and return and provide 3 Analytical Graph and its description only`;
-    // const aiResponse = await openai.chat.completions.create({
-    //     model: "llama-3.3-70b-versatile", // Use Groq-supported model
-    //     messages: [{ role: "user", content: resultMessage }],
-    // });
-    // const aiContent = aiResponse.choices[0].message.content;
-    const aiContent = SuggestQuestionData;
+    
+    const aiResponse = await openai.chat.completions.create({
+        model: "llama-3.3-70b-versatile", // Use Groq-supported model
+        messages: [{ role: "user", content: resultMessage }],
+    });
+    const aiContent = aiResponse.choices[0].message.content;
+    // const aiContent = SuggestQuestionData;
     const pointsArray = aiContent
       .split("\n")
       .filter((point) => point.trim() !== "") // Remove empty lines

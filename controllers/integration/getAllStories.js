@@ -2,22 +2,13 @@ import { INTERNALERROR, NOTFOUND, OK } from "../../constant/httpStatus.js";
 import { responseMessages } from "../../constant/responseMessages.js";
 import storyModel from "../../models/Story.js";
 import userModel from "../../models/User.js";
+import integrationModel from "../../models/IntegrationCredentials.js";
 import mysql from "mysql2";
 import dotenv from "dotenv";
 import storyBoardModel from "../../models/storyBoard.js";
+import { checkIntegration } from "../../utils/checkInteration.js";
 dotenv.config();
 
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT),
-    queueLimit: 0,
-    connectTimeout: parseInt(process.env.DB_TIMEOUT),
-});
 export const getAllStories = async (req, res) => {
     try {
         const userId = req.userId;
@@ -38,6 +29,8 @@ export const getAllStories = async (req, res) => {
                 message: responseMessages.STORY_NOT_FOUND,
             });
         }
+        const findIntegration = await integrationModel.findById(storyBoard.integrationId)
+        const { pool } = await checkIntegration(findIntegration)
         const findStories = await storyModel.find({ storyBoardId })
         const result = await Promise.all(
             findStories.map((story) => {

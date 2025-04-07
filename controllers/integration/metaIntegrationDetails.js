@@ -5,7 +5,7 @@ import metaIntegrationModel from "../../models/MetaIntegrationDetails.js";
 import userModel from "../../models/User.js";
 import mysql from "mysql2";
 import dotenv from "dotenv";
-import { checkIntegration } from "../../utils/checkInteration.js";
+import { checkIntegration, checkIntegrationWithPromise } from "../../utils/checkInteration.js";
 dotenv.config();
 
 export const MetaIntegrationDetails = async (req, res) => {
@@ -44,7 +44,7 @@ export const MetaIntegrationDetails = async (req, res) => {
         }
         let responseData = [];
         let errors = [];
-        const { pool } = await checkIntegration(findIntegration);
+        const { pool } = await checkIntegrationWithPromise(findIntegration);
         for (const table of tables) {
             try {
                 const { tableName, description } = table;

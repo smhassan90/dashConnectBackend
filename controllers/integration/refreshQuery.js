@@ -6,23 +6,14 @@ import userModel from "../../models/User.js";
 import OpenAI from "openai";
 import mysql from "mysql2";
 import dotenv from "dotenv";
+import storyBoardModel from "../../models/storyBoard.js";
+import { checkIntegration } from "../../utils/checkInteration.js";
 dotenv.config();
-
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT),
-    queueLimit: 0,
-    connectTimeout: parseInt(process.env.DB_TIMEOUT),
-});
 
 export const refreshQuery = async (req, res) => {
     try {
-        const { Query} = req.body;
+        const { Query } = req.body;
+        const { storyBoardId } = req.params
         const userId = req.userId;
         const user = await userModel.findById(userId).select("company");
         if (!user) {
@@ -40,9 +31,17 @@ export const refreshQuery = async (req, res) => {
                 message: responseMessages.COMPANY_NOT_FOUND,
             });
         }
-        const findIntegration = await integrationModel.findOne({
-            companyId,
-        });
+        const findStoryBoard = await storyBoardModel.findById(storyBoardId);
+        if (!findStoryBoard) {
+            return res.status(NOTFOUND).send({
+                success: false,
+                error: true,
+                message: responseMessages.STORY_BOARD_NOT_FOUND,
+            });
+        }
+        const findIntegration = await integrationModel.findById(
+            findStoryBoard?.integrationId
+        );
         if (!findIntegration) {
             return res.status(NOTFOUND).send({
                 success: false,
@@ -50,7 +49,7 @@ export const refreshQuery = async (req, res) => {
                 message: responseMessages.INTEGRATION_NOT_FOUND,
             });
         }
-
+        const { pool } = await checkIntegration(findIntegration);
         const findMetaIntegration = await metaIntegrationModel.find({
             integrationId: findIntegration._id,
         });

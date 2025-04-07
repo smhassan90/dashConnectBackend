@@ -5,20 +5,8 @@ import metaIntegrationModel from "../../models/MetaIntegrationDetails.js";
 import userModel from "../../models/User.js";
 import mysql from "mysql2";
 import dotenv from "dotenv";
-import { checkIntegration } from "../../utils/checkInteration.js";
+import { checkIntegrationWithPromise } from "../../utils/checkInteration.js";
 dotenv.config();
-
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT),
-    queueLimit: 0,
-    connectTimeout: parseInt(process.env.DB_TIMEOUT),
-}).promise();
 
 export const updateMetaIntegrationDetails = async (req, res) => {
     try {
@@ -54,7 +42,7 @@ export const updateMetaIntegrationDetails = async (req, res) => {
                 message: `Table ${tableName} is Already Exist`,
             });
         }
-        const { pool } = await checkIntegration(findIntegration);
+        const { pool } = await checkIntegrationWithPromise(findIntegration);
         const [tableExists] = await pool.query("SHOW TABLES LIKE ?", [tableName]);
         if (tableExists.length === 0) {
             return res.status(NOTFOUND).send({

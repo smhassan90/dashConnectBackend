@@ -80,42 +80,17 @@ export const genrateGraphQuery = async (req, res) => {
         }
 
 
-        // const aiResponse = await openai.chat.completions.create({
-        //     model: "llama-3.3-70b-versatile",
-        //     messages: [{ role: "user", content: resultMessage }],
-        // });
-        // const query = cleanSQLQuery(aiResponse.choices[0].message.content)
-        function modifyQueryForMySQL(query) {
-            return query
-                .replace(/\bIDENTITY\(1,1\)\b/gi, "AUTO_INCREMENT")
-                .replace(/\bNVARCHAR\((\d+)\)/gi, "VARCHAR($1)")
-        }
-        function modifyQueryForOracle(query) {
-            return query
-                .replace(/LIMIT \d+/i, "")
-                .replace(/AUTO_INCREMENT/i, "")
-        }
-        function modifyQueryForSQLServer(query) {
-            return query
-                .replace(/`/g, "")
-                .replace(/LIMIT \d+/i, "")
-                .replace(/UNSIGNED/i, "")
-        }
-        function modifyQueryForDatabase(query, databaseType) {
-            if (databaseType === "mysql") {
-                return modifyQueryForMySQL(query);
-            } else if (databaseType === "oracle") {
-                return modifyQueryForOracle(query);
-            } else if (databaseType === "sqlserver") {
-                return modifyQueryForSQLServer(query);
-            } else {
-                return query; // Default case (agar koi match na kare toh original query return kar do)
-            }
-        }
+        const aiResponse = await openai.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: resultMessage }],
+        });
+        const query = cleanSQLQuery(aiResponse.choices[0].message.content)
+
+
         // const aiGeneratedQuery = aiResponse.choices[0].message.content
         // console.log(aiGeneratedQuery, "aiGeneratedQuery")
         // const query = cleanSQLQuery(aiGeneratedQuery);
-        const query = "SELECT t_doctor.NAME, t_doctor.AGE, SUM(t_appointment.charges) AS total_income FROM t_doctor JOIN t_appointment ON t_doctor.ID = t_appointment.DOCTOR_ID GROUP BY t_doctor.ID, t_doctor.NAME";
+        // const query = "SELECT t_doctor.NAME, t_doctor.AGE, SUM(t_appointment.charges) AS total_income FROM t_doctor JOIN t_appointment ON t_doctor.ID = t_appointment.DOCTOR_ID GROUP BY t_doctor.ID, t_doctor.NAME";
         const { pool } = await checkIntegration(findIntegration);
         if (findIntegration.platformName === "mysql") {
             pool.query(query, (error, results) => {
